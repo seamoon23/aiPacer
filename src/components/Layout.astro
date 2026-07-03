@@ -1,0 +1,51 @@
+---
+import Header from "./Header.astro";
+import Footer from "./Footer.astro";
+import "../styles/global.css";
+
+type Props = {
+  title: string;
+  description: string;
+  pathname: string;
+  structuredData?: Array<Record<string, unknown>>;
+};
+
+const { title, description, pathname, structuredData = [] } = Astro.props;
+const canonicalUrl = new URL(pathname, Astro.site ?? "https://example.com");
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl.toString()} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href={canonicalUrl.toString()} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    {
+      structuredData.map((entry) => (
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(entry)}
+        />
+      ))
+    }
+  </head>
+  <body>
+    <div class="site-shell">
+      <Header pathname={pathname} />
+      <main class="content-stack">
+        <slot />
+      </main>
+      <Footer />
+    </div>
+  </body>
+</html>

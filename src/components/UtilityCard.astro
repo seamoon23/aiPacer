@@ -1,0 +1,29 @@
+---
+type Props = {
+  title: string;
+  description: string;
+  href?: string;
+  badge?: string;
+};
+
+const { title, description, href, badge } = Astro.props;
+---
+
+<article class="card">
+  {badge && <p class="eyebrow">{badge}</p>}
+  <h3>{title}</h3>
+  <p class="muted">{description}</p>
+  {
+    href ? (
+      <div class="cta-row">
+        <a class="button button-primary" href={href}>
+          열기
+        </a>
+      </div>
+    ) : (
+      <div class="cta-row">
+        <span class="button button-secondary">준비 중</span>
+      </div>
+    )
+  }
+</article>

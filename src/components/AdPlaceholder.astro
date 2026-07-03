@@ -1,0 +1,16 @@
+---
+type Props = {
+  title?: string;
+  description?: string;
+};
+
+const {
+  title = "광고 영역 placeholder",
+  description = "1차 MVP에서는 실제 광고 코드 없이 자리만 표시합니다."
+} = Astro.props;
+---
+
+<aside class="ad-placeholder" aria-label="광고 영역">
+  <strong>{title}</strong>
+  <p>{description}</p>
+</aside>

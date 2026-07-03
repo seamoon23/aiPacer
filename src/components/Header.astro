@@ -1,0 +1,39 @@
+---
+type Props = {
+  pathname: string;
+};
+
+const { pathname } = Astro.props;
+
+const links = [
+  { href: "/", label: "홈" },
+  { href: "/ai-pacer/", label: "AI Pacer" },
+  { href: "/about/", label: "About" },
+  { href: "/privacy/", label: "Privacy" },
+  { href: "/terms/", label: "Terms" }
+];
+---
+
+<header class="site-header">
+  <div class="header-bar">
+    <a class="brand-mark" href="/">
+      <span class="brand-badge">AP</span>
+      <span class="brand-copy">
+        <strong>AI Pacer</strong>
+        <span>수동 입력 기반 AI 사용량 페이스 계산기</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="주요 메뉴">
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            class={pathname === link.href ? "is-active" : undefined}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>

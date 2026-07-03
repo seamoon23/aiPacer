@@ -1,0 +1,61 @@
+---
+import AdPlaceholder from "../../components/AdPlaceholder.astro";
+import AiPacerApp from "../../components/AiPacerApp";
+import Layout from "../../components/Layout.astro";
+import { getAiPacerStructuredData } from "../../lib/seo";
+
+const structuredData = getAiPacerStructuredData("https://example.com/ai-pacer/");
+---
+
+<Layout
+  title="AI Pacer - Claude Code, Codex 사용량 페이스 계산기"
+  description="서비스 화면에 보이는 5시간 세션 숫자와 주간 숫자를 직접 입력해 오늘 AI를 얼마나 써도 되는지 계산하는 무료 웹 도구입니다. 서버 저장 없이 브라우저에서만 계산합니다."
+  pathname="/ai-pacer/"
+  structuredData={structuredData}
+>
+  <AiPacerApp client:load />
+
+  <details class="content-panel faq-disclosure">
+    <summary class="faq-summary">
+      <span class="faq-badge" aria-hidden="true">FAQ</span>
+      <span>
+        <strong>자주 묻는 질문</strong>
+        <small>정확도, 자동 감지 제외 범위, localStorage 저장 방식을 필요할 때만 확인합니다.</small>
+      </span>
+    </summary>
+    <div class="faq-list faq-disclosure-body">
+      <article class="faq-item">
+        <h3>AI Pacer는 정확한 토큰 계산기인가요?</h3>
+        <p class="muted">
+          아닙니다. AI Pacer는 공식 사용량 추적기가 아니라 현재 입력값 기준의 추정 결과를 보여주는 페이스 계산 도구입니다.
+        </p>
+      </article>
+      <article class="faq-item">
+        <h3>Claude Code나 Codex 사용량을 자동으로 읽나요?</h3>
+        <p class="muted">
+          읽지 않습니다. 이번 MVP는 사용자가 서비스 화면의 숫자를 직접 입력하는 수동형 도구이며, 자동 감지와 확장프로그램은 제외했습니다.
+        </p>
+      </article>
+      <article class="faq-item">
+        <h3>입력한 데이터가 서버에 저장되나요?</h3>
+        <p class="muted">
+          저장되지 않습니다. 기록과 설정은 브라우저 localStorage에만 저장되며 외부 서버로 전송하지 않습니다.
+        </p>
+      </article>
+      <article class="faq-item">
+        <h3>Claude Code와 Codex에도 쓸 수 있나요?</h3>
+        <p class="muted">
+          네. Claude Code의 0-&gt;100 표시와 Codex의 100-&gt;0 표시를 도구별로 해석해 계산합니다.
+        </p>
+      </article>
+      <article class="faq-item">
+        <h3>모바일에서도 사용할 수 있나요?</h3>
+        <p class="muted">
+          가능합니다. 모바일 우선 레이아웃으로 구성해 입력과 결과 카드를 작은 화면에서도 읽기 쉽게 만들었습니다.
+        </p>
+      </article>
+    </div>
+  </details>
+
+  <AdPlaceholder title="하단 광고 placeholder" description="실제 AdSense 코드는 넣지 않고, 향후 위치만 미리 확보해두었습니다." />
+</Layout>

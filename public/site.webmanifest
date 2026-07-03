@@ -1,0 +1,18 @@
+{
+  "name": "AI Pacer",
+  "short_name": "AI Pacer",
+  "description": "수동 입력 기반 AI 사용량 페이스 계산기",
+  "start_url": "/ai-pacer/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#c96f32",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
