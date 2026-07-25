@@ -5,85 +5,41 @@ import UtilityCard from "../components/UtilityCard.astro";
 ---
 
 <Layout
-  title="AI Pacer - 무료 웹 유틸리티 허브"
-  description="AI Pacer를 포함한 무료 웹 유틸리티를 모아두는 정적 허브입니다. 서버 저장과 로그인 없이 브라우저에서만 동작합니다."
+  title="AI Pacer - 무료 웹 유틸리티 01"
+  description="로그인과 AI 연동 없이 브라우저에서 바로 쓰는 간단한 웹 유틸리티 모음입니다. 첫 번째 도구는 AI Pacer입니다."
   pathname="/"
 >
-  <section class="hero-panel">
-    <div class="hero-grid">
-      <div>
-        <p class="eyebrow">무료 웹 유틸리티 허브</p>
-        <h1>브라우저 안에서 바로 쓰는 가벼운 생산성 도구 모음</h1>
-        <p class="lead">
-          이 사이트는 서버 저장 없이 사용할 수 있는 정적 웹 유틸리티를 한 곳에 모으는 허브입니다. 첫 번째 도구인 <strong>AI Pacer</strong>는 AI 사용량을 직접 입력해 오늘의 사용 페이스를 판단하도록 돕습니다.
-        </p>
-        <div class="chip-row">
-          <span class="chip">AI Pacer 포함</span>
-          <span class="chip">로그인 없음</span>
-          <span class="chip">서버 저장 없음</span>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div>
-          <span class="muted">현재 공개된 첫 도구</span>
-          <strong>AI Pacer</strong>
-        </div>
-        <div class="metrics">
-          <div class="metric">
-            <span>지원 환경</span>
-            <strong>모바일 + 데스크톱</strong>
-          </div>
-          <div class="metric">
-            <span>데이터 저장</span>
-            <strong>브라우저 localStorage</strong>
-          </div>
-        </div>
-      </div>
-    </div>
+  <section class="hub-intro">
+    <p class="eyebrow">SIMPLE UTILITY</p>
+    <h1>무료 웹 유틸리티</h1>
+    <p class="lead">
+      복잡한 가입이나 연동 없이 필요한 계산만 바로 처리합니다. 첫 번째 도구는 주간 AI 용량을 오늘 작업 횟수로 바꾸는 <strong>AI Pacer</strong>입니다.
+    </p>
   </section>
 
-  <section class="content-panel">
-    <div class="history-head">
+  <section class="utility-catalog" aria-labelledby="utility-catalog-title">
+    <header class="section-head">
       <div>
-        <p class="eyebrow">도구 모음</p>
-        <h2>지금 바로 열 수 있는 유틸리티</h2>
+        <p class="eyebrow">AVAILABLE</p>
+        <h2 id="utility-catalog-title">지금 쓸 수 있는 도구</h2>
       </div>
-    </div>
+      <p>모든 계산은 현재 화면 안에서만 처리합니다.</p>
+    </header>
+
     <div class="utility-grid">
       <UtilityCard
         title="AI Pacer"
-        description="Claude Code와 Codex 사용량 페이스 계산기. 서비스 화면 표시값과 도구별 리셋/사용패턴을 직접 넣어 오늘 더 써도 되는 양을 판단합니다."
+        description="주간 남은 용량과 초기화 요일을 넣고 오늘 가능한 소형, 중형, 대형 작업 횟수를 확인합니다."
         href="/ai-pacer/"
-        badge="추천"
+        badge="01"
+        imageSrc="/assets/ai-pacer-icon.png"
+        imageAlt="굵은 안경을 쓴 샴고양이 달콤이 코치"
       />
       <UtilityCard
-        title="다음 유틸 예정"
-        description="텍스트 길이 계산, 러닝 페이스, 프롬프트 비용 보조 도구 등 브라우저에서 바로 쓰는 유틸을 추가할 예정입니다."
-        badge="Placeholder"
+        title="다음 유틸리티"
+        description="같은 원칙으로 한 가지 계산을 빠르게 끝내는 도구를 추가할 예정입니다."
+        badge="02"
       />
-      <UtilityCard
-        title="서버 저장 없음"
-        description="이 허브의 도구들은 1차 버전에서 로그인과 서버 저장 없이 작동하는 방향을 우선합니다."
-        badge="원칙"
-      />
-    </div>
-  </section>
-
-  <section class="content-panel">
-    <div class="info-grid">
-      <article class="card">
-        <h3>데이터 처리 방식</h3>
-        <p class="muted">
-          사용자가 입력한 값은 브라우저 localStorage에만 저장됩니다. 외부 서버로 전송하지 않으며, 브라우저 데이터를 지우면 함께 삭제됩니다.
-        </p>
-      </article>
-      <article class="card">
-        <h3>계정 없이 사용</h3>
-        <p class="muted">
-          1차 MVP에는 로그인, 회원가입, API 키 입력, 자동 감지 기능이 없습니다. 누구나 바로 열고 수동 입력으로 사용할 수 있습니다.
-        </p>
-      </article>
     </div>
   </section>
 

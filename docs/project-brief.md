@@ -1,29 +1,26 @@
-﻿# Project Brief
+# Project Brief
 
-## Name
+## 이름과 위치
 
-AiPacer
+- 프로젝트: AiPacer
+- 루트: `C:\codex\app\AiPacer`
+- 유틸리티 허브 번호: 01
 
-## Root
+## 한 줄 목표
 
-```text
-C:\codex\app\AiPacer
-```
+주간 남은 AI 용량과 초기화 요일을 입력하면 달콤이가 오늘 가능한 소형, 중형, 대형 작업 횟수를 바로 보여준다.
 
-## One-line Goal
+## 제품 경계
 
-AI/Codex 사용량, 쿨다운, 작업 흐름을 추적하고 다음 작업 타이밍을 관리하는 개인 생산성 유틸.
+- 정적 웹과 Manifest V3 Chrome 확장 프로그램
+- AI 연동, 로그인, 서버, 저장 기능 없음
+- 입력 2개와 선택 가능한 사용시간
+- 공식 사용량이 아닌 보수적인 추정치
+- 캐릭터는 실제 3살 샴고양이 달콤이를 바탕으로 한 굵은 안경의 사감 선생님 코치
+- 상태마다 별도 이미지 사용, 화면 문구는 `달콤이 says`로 통일
 
-## Current Next Actions
+## 현재 다음 작업
 
-- [ ] 현재 실행 방식과 패키지 매니저 확인
-- [ ] MVP 기능 범위 재정리
-- [ ] README와 실행 명령 정리
-- [ ] 로컬 저장/백업 방식 결정
-
-## Codex Project Naming Rule
-
-Codex 좌측 프로젝트명은 실제 폴더명과 동일하게 맞춘다.
-
-- Folder: AiPacer
-- Recommended Codex Project Name: AiPacer
+- [ ] 실제 배포 도메인 설정
+- [ ] Chrome Web Store 등록 자료 준비
+- [ ] 실제 사용자 피드백 수집 후 작업 규모 기준 검토

@@ -1,105 +1,60 @@
 # Utility Hub App 01: AI Pacer
 
-## One-line Summary
+## 공유용 한 줄
 
-AI Pacer is a browser-only utility that helps users manually estimate AI tool usage pace, cooldown timing, and whether they should keep working or wait.
+주간 남은 AI 용량과 초기화 요일을 넣으면 달콤이가 오늘 가능한 소형, 중형, 대형 작업 횟수를 바로 알려주는 브라우저 계산기.
 
-## Hub Fit
+## 허브 적합성
 
-AI Pacer is suitable as app 01 in a utility hub site.
+AI Pacer는 광고형 유틸리티 허브의 01번 도구로 넣기 적합합니다.
 
-- It solves a specific recurring problem: "Can I keep using Codex or Claude Code right now?"
-- It does not need AI API integration, login, backend storage, or account permissions.
-- The calculator-style workflow keeps hosting and operating cost low.
-- Browser-only storage is a privacy-friendly selling point.
-- The app has enough original utility to stand alone as one page in a broader free-tools hub.
+- AI API, 로그인, 서버가 없어 운영비와 권한 부담이 작습니다.
+- 입력 2개로 바로 결과가 나와 한 페이지 유틸리티 흐름이 명확합니다.
+- 결과가 작업 횟수 표로 끝나므로 일반 사용자도 빠르게 이해할 수 있습니다.
+- 웹 페이지와 Chrome 확장 프로그램이 같은 계산 코어를 공유합니다.
+- 입력값을 저장하거나 전송하지 않아 개인정보 안내가 단순합니다.
+- 달콤이 상태 이미지가 결과 차이를 빠르게 구분하게 해 줍니다.
 
-Position it as a practical productivity calculator, not as an official AI usage tracker.
+공식 사용량 추적기나 정확한 토큰 계산기로 홍보하지 않고, 작업 계획을 위한 추정 계산기로 표현해야 합니다.
 
-## Suggested Hub Card Copy
+## 허브 카드 문구
 
-Title:
+- 번호: `01`
+- 제목: `AI Pacer`
+- 설명: `주간 남은 용량과 초기화 요일을 넣고 오늘 가능한 소형, 중형, 대형 작업 횟수를 확인합니다.`
+- 버튼: `열기`
+- 경로: `/ai-pacer/`
+- 아이콘: `/assets/ai-pacer-icon.png`
 
-```text
-AI Pacer
-```
+## 현재 제품 범위
 
-Subtitle:
+- 주간 남은 용량과 초기화 요일 입력
+- 주 사용시간 09:00부터 18:00 기본값, 변경 가능
+- 오늘 권장 용량
+- 소형 2%와 20분, 중형 6%와 60분, 대형 15%와 150분 기준 표
+- `달콤이 says` 상황별 추천 문구
+- 독려, 응원, 유지, 주의, 휴식의 다섯 상태 이미지
+- 굵은 안경과 청록 가디건을 입은 샴고양이 달콤이 코치
+- 계산 기준 다이얼로그
+- GitHub Sponsors와 Buy Me a Coffee 후원 링크
+- 권한 없는 Manifest V3 Chrome 확장 프로그램
+- 하단 광고 자리만 제공
 
-```text
-Codex and Claude Code usage pace calculator
-```
+## 광고 배치 원칙
 
-Short description:
+- 계산기 입력과 결과가 첫 화면의 주 콘텐츠여야 합니다.
+- 광고는 계산 흐름 아래 또는 충분히 분리된 영역에 둡니다.
+- 입력 컨트롤, 결과 횟수, 도움말 버튼과 혼동되는 위치에 광고를 두지 않습니다.
+- 실제 광고를 붙일 때는 적용 시점의 광고 네트워크 정책을 다시 확인합니다.
 
-```text
-Manually enter the usage numbers shown by your AI tools and get a local estimate of remaining pace, cooldown pressure, and next-work timing.
-```
+## 통합 포인트
 
-CTA:
+허브에서 필요한 파일은 다음과 같습니다.
 
-```text
-Open calculator
-```
+- 계산 UI: `src/components/AiPacerApp.tsx`
+- 계산 코어: `src/lib/pacerCalculator.ts`
+- 전용 스타일: `src/styles/pacer.css`
+- 상태 캐릭터: `src/assets/dalkomi-*.webp`
+- 허브 아이콘: `public/assets/ai-pacer-icon.png`
 
-Korean variant:
-
-```text
-AI 사용량 숫자를 직접 입력해 오늘 더 달려도 되는지, 잠시 기다릴지 계산하는 브라우저 로컬 유틸리티.
-```
-
-## MVP Scope
-
-Current page:
-
-- Route: `/ai-pacer/`
-- Manual usage input only
-- Codex remaining-style display support
-- Claude Code used-style display conversion
-- Separate weekly settings per tool
-- Local snapshot history
-- Local recommendation restore after refresh
-- Race-style comparison dashboard
-- Browser notification permission and test notification
-- Browser-only JSON export
-
-Explicitly excluded:
-
-- AI service API integration
-- Automatic usage detection
-- Login or accounts
-- Server backend
-- Database storage
-- Chrome extension
-- Payment flow
-- Real analytics scripts
-
-## Advertising Notes
-
-AI Pacer can be monetized as part of a useful utility hub, but avoid making the page feel like it exists only for ads.
-
-Recommended approach:
-
-- Keep the calculator as the first-screen value.
-- Put ads below the main calculation flow or in clearly separated desktop-side areas.
-- Do not place ads next to primary input buttons, download/export actions, or navigation controls.
-- Keep ad quantity lower than publisher-created utility content.
-- Label ad areas clearly according to the ad network's current policy.
-- Add more utility pages over time so the hub has clear navigation and substantial original value.
-
-Reference links checked on 2026-07-19:
-
-- Google AdSense ad placement policies: https://support.google.com/adsense/answer/1346295
-- Google AdSense program policies: https://support.google.com/adsense/answer/48182
-- Google Publisher policy on more ads than content: https://support.google.com/publisherpolicies/answer/11169917
-- Google guidance on landing page quality for promoted pages: https://support.google.com/adsense/answer/1348727
-
-## Integration Recommendation
-
-For the future utility hub site:
-
-```text
-01. AI Pacer - AI usage pace calculator
-```
-
-Use AI Pacer as the first real tool because it already has a complete page, a concrete target user, static deployment readiness, and a clear privacy boundary.
+앱 자체는 라우터, 저장소, API에 의존하지 않아 다른 React 기반 유틸리티 허브로 옮기기 쉽습니다.

@@ -4,26 +4,31 @@ type Props = {
   description: string;
   href?: string;
   badge?: string;
+  imageSrc?: string;
+  imageAlt?: string;
 };
 
-const { title, description, href, badge } = Astro.props;
+const { title, description, href, badge, imageSrc, imageAlt = "" } = Astro.props;
 ---
 
-<article class="card">
-  {badge && <p class="eyebrow">{badge}</p>}
-  <h3>{title}</h3>
-  <p class="muted">{description}</p>
-  {
-    href ? (
-      <div class="cta-row">
-        <a class="button button-primary" href={href}>
-          열기
-        </a>
-      </div>
-    ) : (
-      <div class="cta-row">
-        <span class="button button-secondary">준비 중</span>
-      </div>
-    )
-  }
+<article class:list={["utility-item", { "utility-item--no-image": !imageSrc }]}>
+  {imageSrc && (
+    <img
+      class="utility-icon"
+      src={imageSrc}
+      width="72"
+      height="72"
+      alt={imageAlt}
+    />
+  )}
+  <div class="utility-copy">
+    {badge && <p class="utility-index">{badge}</p>}
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+  {href ? (
+    <a class="utility-open" href={href}>열기</a>
+  ) : (
+    <span class="utility-soon">준비 중</span>
+  )}
 </article>

@@ -1,0 +1,28 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI Variable", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+}
+
+html,
+body,
+#root {
+  width: 420px;
+  min-width: 420px;
+  min-height: 600px;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+  background: #fbfcfa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    background: #17201c;
+  }
+}

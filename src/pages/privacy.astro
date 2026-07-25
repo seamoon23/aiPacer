@@ -4,43 +4,29 @@ import Layout from "../components/Layout.astro";
 
 <Layout
   title="AI Pacer - 개인정보처리방침"
-  description="AI Pacer 1차 MVP의 데이터 저장 방식과 개인정보 처리 원칙을 안내합니다."
+  description="AI Pacer의 입력값 처리와 외부 링크 원칙을 안내합니다."
   pathname="/privacy/"
 >
-  <section class="content-panel">
-    <p class="eyebrow">Privacy</p>
-    <h1>개인정보처리방침</h1>
-    <p class="lead">
-      AI Pacer 1차 MVP는 로그인 없이 동작하며, 사용자가 입력한 기록을 브라우저 localStorage에만 저장합니다.
-    </p>
-  </section>
+  <article class="legal-page">
+    <header class="legal-intro">
+      <p class="eyebrow">PRIVACY</p>
+      <h1>개인정보처리방침</h1>
+      <p class="lead">AI Pacer 계산기는 로그인 없이 동작하며 입력값을 저장하거나 서버로 전송하지 않습니다.</p>
+    </header>
 
-  <section class="content-panel">
-    <div class="content-stack">
-      <article class="card">
-        <h2>저장 위치</h2>
-        <p class="muted">
-          사용량 기록, 최근 설정, 알림 UI 상태는 사용 중인 브라우저의 localStorage에만 저장됩니다.
-        </p>
-      </article>
-      <article class="card">
-        <h2>서버 전송 없음</h2>
-        <p class="muted">
-          입력 데이터는 서버로 전송하지 않습니다. 외부 분석 스크립트, API 전송, 계정 동기화 기능도 이번 버전에는 포함하지 않았습니다.
-        </p>
-      </article>
-      <article class="card">
-        <h2>삭제 방법</h2>
-        <p class="muted">
-          AI Pacer 화면의 기록 삭제 버튼으로 최근 기록을 지울 수 있습니다. 또한 브라우저 사이트 데이터 또는 localStorage를 삭제하면 관련 기록도 함께 제거됩니다.
-        </p>
-      </article>
-      <article class="card">
-        <h2>향후 광고</h2>
-        <p class="muted">
-          향후 광고가 적용될 수 있지만, 현재 1차 MVP에는 실제 광고 코드가 들어 있지 않고 placeholder만 표시합니다.
-        </p>
-      </article>
+    <div class="legal-sections">
+      <section>
+        <h2>입력값</h2>
+        <p>주간 남은 용량, 초기화 요일, 주 사용시간은 현재 화면의 계산에만 사용됩니다. 새로고침하거나 화면을 닫으면 유지되지 않습니다.</p>
+      </section>
+      <section>
+        <h2>외부 전송</h2>
+        <p>계산 과정에서 외부 API를 호출하지 않습니다. 계정 동기화, 자동 사용량 수집, 분석용 사용자 식별 기능도 포함하지 않습니다.</p>
+      </section>
+      <section>
+        <h2>외부 링크와 광고</h2>
+        <p>후원 링크는 사용자가 직접 눌렀을 때만 외부 사이트로 이동합니다. 현재 광고 영역은 자리만 마련되어 있으며 실제 광고 스크립트는 적용하지 않았습니다.</p>
+      </section>
     </div>
-  </section>
+  </article>
 </Layout>

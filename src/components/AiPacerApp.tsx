@@ -1,796 +1,477 @@
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import HeroPaceDashboard from "./HeroPaceDashboard";
-import NotificationSettings from "./NotificationSettings";
-import ProviderRaceDashboard from "./ProviderRaceDashboard";
-import RecommendationCard from "./RecommendationCard";
-import SnapshotHistory from "./SnapshotHistory";
-import TrackingDashboard from "./TrackingDashboard";
-import UsageInputForm from "./UsageInputForm";
-import WeeklySettingsPanel from "./WeeklySettingsPanel";
-import { buildDefaultWeeklyResetAt, formatPercent } from "../lib/date";
+import cautionImage from "../assets/dalkomi-caution.webp";
+import encourageImage from "../assets/dalkomi-encourage.webp";
+import maintainImage from "../assets/dalkomi-maintain.webp";
+import pushImage from "../assets/dalkomi-push.webp";
+import unavailableImage from "../assets/dalkomi-unavailable.webp";
 import {
-  DEFAULT_PROVIDER_PROFILES,
-  clearSnapshots,
-  loadLastRecommendation,
-  loadNotificationSettings,
-  loadProviderProfiles,
-  loadSettings,
-  loadSnapshots,
-  saveLastRecommendation,
-  saveNotificationSettings,
-  saveProviderProfiles,
-  saveSettings,
-  saveSnapshot,
-  removeSnapshot,
-  updateSnapshot
-} from "../lib/storage";
-import {
-  getProviderUsageDirection,
-  normalizeDisplayedUsageValue
-} from "../lib/providerDisplay";
-import { calculateUsageRecommendation } from "../lib/usageCalculator";
+  calculatePacer,
+  DEFAULT_WORKDAY_END,
+  DEFAULT_WORKDAY_START,
+  RESET_WEEKDAYS
+} from "../lib/pacerCalculator";
 import type {
-  ActiveProviderType,
-  NotificationSettings as NotificationSettingsType,
-  ProviderProfile,
-  ProviderProfiles,
-  ProviderType,
-  UsageFormSettings,
-  UsageRecommendation,
-  UsageSnapshot
-} from "../lib/types";
+  PaceStatus,
+  ResetWeekday
+} from "../lib/pacerCalculator";
+import "../styles/pacer.css";
 
-const DEFAULT_FORM: UsageFormSettings = {
-  providerType: "codex",
-  providerName: "Codex",
-  sessionRemainingPct: 80,
-  weeklyRemainingPct: 70,
-  weeklyResetAt: "",
-  dailySessionTarget: 2,
-  taskRiskType: "normal",
-  memo: "",
-  inputModeVersion: 2
+type ImportedCharacterAsset =
+  | string
+  | { src: string; width?: number; height?: number };
+
+function normalizeCharacterAsset(
+  asset: ImportedCharacterAsset
+): { src: string; width: number; height: number } {
+  return typeof asset === "string"
+    ? { src: asset, width: 416, height: 625 }
+    : {
+        src: asset.src,
+        width: asset.width ?? 416,
+        height: asset.height ?? 625
+      };
+}
+
+const DALKOMI_IMAGES: Record<
+  PaceStatus,
+  { image: ReturnType<typeof normalizeCharacterAsset>; alt: string }
+> = {
+  push: {
+    image: normalizeCharacterAsset(
+      pushImage as unknown as ImportedCharacterAsset
+    ),
+    alt: "지시봉을 들고 오늘 할 일을 독려하는 안경 쓴 샴고양이 달콤이"
+  },
+  encourage: {
+    image: normalizeCharacterAsset(
+      encourageImage as unknown as ImportedCharacterAsset
+    ),
+    alt: "엄지를 들고 다정하게 응원하는 안경 쓴 샴고양이 달콤이"
+  },
+  maintain: {
+    image: normalizeCharacterAsset(
+      maintainImage as unknown as ImportedCharacterAsset
+    ),
+    alt: "계획표를 펼쳐 들고 차분하게 페이스를 확인하는 안경 쓴 샴고양이 달콤이"
+  },
+  caution: {
+    image: normalizeCharacterAsset(
+      cautionImage as unknown as ImportedCharacterAsset
+    ),
+    alt: "안경을 낮추고 한 발 쉬어 가라고 주의를 주는 샴고양이 달콤이"
+  },
+  unavailable: {
+    image: normalizeCharacterAsset(
+      unavailableImage as unknown as ImportedCharacterAsset
+    ),
+    alt: "닫힌 노트 위에 기대 잠들어 오늘 작업을 말리는 샴고양이 달콤이"
+  }
 };
 
-type HeroCoachCopy = {
-  eyebrow: string;
-  title: string;
-  body: string;
+type AiPacerAppProps = {
+  variant?: "page" | "extension";
 };
 
-type UtilityDisclosureProps = {
-  badge: string;
-  title: string;
-  summary: string;
-  testId: string;
-  children: ReactNode;
-};
+const SUPPORT_LINKS = [
+  {
+    label: "GitHub Sponsors",
+    href: "https://github.com/sponsors/seamoon23"
+  },
+  {
+    label: "Buy Me a Coffee",
+    href: "https://www.buymeacoffee.com/seamoon23"
+  }
+] as const;
 
-function UtilityDisclosure({
-  badge,
-  title,
-  summary,
-  testId,
-  children
-}: UtilityDisclosureProps) {
-  return (
-    <details className="utility-disclosure" data-testid={testId}>
-      <summary className="utility-summary">
-        <span className="utility-badge" aria-hidden="true">
-          {badge}
-        </span>
-        <span>
-          <strong>{title}</strong>
-          <small>{summary}</small>
-        </span>
-      </summary>
-      <div className="utility-disclosure-body">{children}</div>
-    </details>
+function formatPercent(value: number): string {
+  if (value <= 0) {
+    return "0%";
+  }
+
+  if (value >= 10) {
+    return `${Math.round(value)}%`;
+  }
+
+  return `${value.toFixed(1)}%`;
+}
+
+function formatResetDistance(hours: number): string {
+  const totalHours = Math.max(0, Math.round(hours));
+  const days = Math.floor(totalHours / 24);
+  const remainingHours = totalHours % 24;
+
+  if (days <= 0) {
+    return `${remainingHours}시간`;
+  }
+
+  if (remainingHours === 0) {
+    return `${days}일`;
+  }
+
+  return `${days}일 ${remainingHours}시간`;
+}
+
+function formatWorkdayCount(value: number): string {
+  if (value <= 0) {
+    return "0일";
+  }
+
+  return `${value.toFixed(1)}일`;
+}
+
+function closeDialog(dialog: HTMLDialogElement | null): void {
+  if (!dialog) {
+    return;
+  }
+
+  if (typeof dialog.close === "function") {
+    dialog.close();
+    return;
+  }
+
+  dialog.removeAttribute("open");
+}
+
+export default function AiPacerApp({
+  variant = "page"
+}: AiPacerAppProps) {
+  const [remainingPct, setRemainingPct] = useState(60);
+  const [resetWeekday, setResetWeekday] =
+    useState<ResetWeekday>(1);
+  const [workdayStart, setWorkdayStart] = useState(
+    DEFAULT_WORKDAY_START
   );
-}
-
-function getProviderName(form: UsageFormSettings): string {
-  return form.providerName;
-}
-
-function getDefaultProviderName(providerType: ActiveProviderType): string {
-  return DEFAULT_PROVIDER_PROFILES[providerType].providerName;
-}
-
-function toActiveProviderType(providerType: ProviderType): ActiveProviderType {
-  if (providerType === "claude" || providerType === "claude-code") {
-    return "claude-code";
-  }
-
-  return "codex";
-}
-
-function buildWeekId(providerType: ActiveProviderType, now = new Date()): string {
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-
-  return `${providerType}-${year}${month}${day}-${hours}${minutes}`;
-}
-
-function withProviderDefaults(
-  providerType: ActiveProviderType,
-  profile: ProviderProfile
-): ProviderProfile {
-  return {
-    ...DEFAULT_PROVIDER_PROFILES[providerType],
-    ...profile,
-    providerType,
-    providerName: profile.providerName || getDefaultProviderName(providerType),
-    weekId: profile.weekId || buildWeekId(providerType),
-    weeklyResetAt: profile.weeklyResetAt || buildDefaultWeeklyResetAt()
-  };
-}
-
-function withProfileDefaults(profiles: ProviderProfiles): ProviderProfiles {
-  return {
-    codex: withProviderDefaults("codex", profiles.codex),
-    "claude-code": withProviderDefaults("claude-code", profiles["claude-code"])
-  };
-}
-
-function buildFormForProvider(
-  form: UsageFormSettings,
-  providerType: ActiveProviderType,
-  profiles: ProviderProfiles
-): UsageFormSettings {
-  const profile = withProviderDefaults(providerType, profiles[providerType]);
-
-  return {
-    ...form,
-    providerType,
-    providerName: profile.providerName || getDefaultProviderName(providerType),
-    weeklyResetAt: profile.weeklyResetAt || buildDefaultWeeklyResetAt(),
-    dailySessionTarget: profile.dailySessionTarget,
-    inputModeVersion: 2
-  };
-}
-
-function getCalculationSnapshots(
-  snapshots: UsageSnapshot[],
-  providerType: ActiveProviderType,
-  weekId: string
-): UsageSnapshot[] {
-  return snapshots.filter((snapshot) => {
-    const sameProvider = toActiveProviderType(snapshot.providerType) === providerType;
-
-    if (!sameProvider) {
-      return false;
-    }
-
-    if (!snapshot.weekId) {
-      return true;
-    }
-
-    return snapshot.weekId === weekId;
-  });
-}
-
-function getLatestSnapshot(snapshots: UsageSnapshot[]): UsageSnapshot | null {
-  return snapshots[0] ?? null;
-}
-
-function buildHeroCopy(
-  snapshots: UsageSnapshot[],
-  recommendation: UsageRecommendation | null
-): HeroCoachCopy {
-  const latest = getLatestSnapshot(snapshots);
-  const providerLabel = latest?.providerName
-    ? `${latest.providerName} 기준`
-    : "현재 선택 AI 기준";
-
-  if (snapshots.length === 0) {
-    return {
-      eyebrow: "AI 사용량 페이스 계산기",
-      title: "오늘 어느 AI를 달릴까요?",
-      body: "숫자 2개 입력하면 오늘 더 쓸 AI가 보입니다."
-    };
-  }
-
-  if (recommendation) {
-    const statusCopy: Record<
-      UsageRecommendation["status"],
-      Pick<HeroCoachCopy, "title" | "body">
-    > = {
-      safe: {
-        title: "갈 길이 멉니다. 필요한 작업은 더 달려도 됩니다",
-        body: `${providerLabel} 오늘 남은 페이스는 ${formatPercent(
-          recommendation.recommendedAdditionalPct
-        )}입니다. 필요한 작업은 이어가도 좋습니다.`
-      },
-      normal: {
-        title: "흐름은 괜찮지만 중간 체크가 좋습니다",
-        body: `${providerLabel} 오늘 남은 페이스는 ${formatPercent(
-          recommendation.recommendedAdditionalPct
-        )}입니다. 큰 흐름 전후로 한 번 더 입력하세요.`
-      },
-      caution: {
-        title: "쉬엄쉬엄 짧게 달릴 시간입니다",
-        body: `${providerLabel} 오늘 남은 페이스는 ${formatPercent(
-          recommendation.recommendedAdditionalPct
-        )}입니다. 짧게 끊어 진행하고 다시 입력하세요.`
-      },
-      danger: {
-        title: "새 대형 작업은 잠시 미루세요",
-        body: `${providerLabel} 오늘 남은 페이스는 ${formatPercent(
-          recommendation.recommendedAdditionalPct
-        )}입니다. 꼭 필요한 질문만 짧게 처리하세요.`
-      }
-    };
-
-    return {
-      eyebrow: "오늘의 코치",
-      ...statusCopy[recommendation.status]
-    };
-  }
-
-  if (!latest) {
-    return {
-      eyebrow: "AI 사용량 페이스 계산기",
-      title: "오늘 어느 AI를 달릴까요?",
-      body: "숫자 2개 입력하면 오늘 더 쓸 AI가 보입니다."
-    };
-  }
-
-  const hasLowSession = latest.sessionRemainingPct < 20;
-  const hasLowWeek = latest.weeklyRemainingPct < 25;
-  const hasRoom = latest.sessionRemainingPct >= 65 && latest.weeklyRemainingPct >= 55;
-  const body = `${latest.providerName} 기준 5시간 여유 ${formatPercent(
-    latest.sessionRemainingPct
-  )}, 주간 여유 ${formatPercent(latest.weeklyRemainingPct)}입니다.`;
-
-  if (hasLowSession || hasLowWeek) {
-    return {
-      eyebrow: "오늘의 코치",
-      title: "새 대형 작업은 잠시 미루세요",
-      body: `${body} 꼭 필요한 질문만 짧게 처리하세요.`
-    };
-  }
-
-  if (hasRoom) {
-    return {
-      eyebrow: "오늘의 코치",
-      title: "갈 길이 멉니다. 필요한 작업은 더 달려도 됩니다",
-      body: `${body} 지금은 아끼기보다 중요한 흐름을 밀어도 좋습니다.`
-    };
-  }
-
-  return {
-    eyebrow: "오늘의 코치",
-    title: "흐름은 괜찮지만 중간 체크가 좋습니다",
-    body: `${body} 큰 덩어리 작업 뒤에는 한 번 더 입력하세요.`
-  };
-}
-
-function validateForm(form: UsageFormSettings): string[] {
-  const errors: string[] = [];
-
-  if (!Number.isFinite(form.sessionRemainingPct) || form.sessionRemainingPct < 0 || form.sessionRemainingPct > 100) {
-    errors.push("5시간 세션 표시값은 0부터 100 사이 숫자여야 합니다.");
-  }
-
-  if (!Number.isFinite(form.weeklyRemainingPct) || form.weeklyRemainingPct < 0 || form.weeklyRemainingPct > 100) {
-    errors.push("주간 표시값은 0부터 100 사이 숫자여야 합니다.");
-  }
-
-  if (!form.weeklyResetAt) {
-    errors.push("주간 리셋 일시를 입력해주세요.");
-  }
-
-  if (
-    !Number.isFinite(form.dailySessionTarget) ||
-    form.dailySessionTarget < 1 ||
-    form.dailySessionTarget > 6
-  ) {
-    errors.push("하루 5시간 세션 소진 목표는 1부터 6 사이 숫자여야 합니다.");
-  }
-
-  return errors;
-}
-
-export default function AiPacerApp() {
-  const [form, setForm] = useState<UsageFormSettings>({
-    ...DEFAULT_FORM,
-    weeklyResetAt: buildDefaultWeeklyResetAt()
-  });
-  const [snapshots, setSnapshots] = useState<UsageSnapshot[]>([]);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [recommendation, setRecommendation] = useState<UsageRecommendation | null>(null);
-  const [isRecommendationRestored, setIsRecommendationRestored] = useState(false);
-  const [providerProfiles, setProviderProfiles] = useState<ProviderProfiles>(
-    DEFAULT_PROVIDER_PROFILES
-  );
-  const [storageNotice, setStorageNotice] = useState<string>("");
-  const [weekNotice, setWeekNotice] = useState<string>("");
-  const [editingSnapshotId, setEditingSnapshotId] = useState<string | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [notificationSettings, setNotificationSettings] =
-    useState<NotificationSettingsType>({
-      permission: "default",
-      placeholderEnabled: false,
-      placeholderTime: "09:00"
-    });
+  const [workdayEnd, setWorkdayEnd] = useState(DEFAULT_WORKDAY_END);
+  const [now, setNow] = useState(() => new Date());
+  const helpDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    const savedSettings = loadSettings();
-    const savedProfiles = withProfileDefaults(loadProviderProfiles());
-    const profile = savedProfiles[savedSettings.providerType];
-    const nextForm = {
-      ...savedSettings,
-      providerName: profile.providerName,
-      weeklyResetAt:
-        profile.weeklyResetAt ||
-        savedSettings.weeklyResetAt ||
-        buildDefaultWeeklyResetAt(),
-      dailySessionTarget: profile.dailySessionTarget
-    };
-    const savedNotificationSettings = loadNotificationSettings();
-    const savedLastRecommendation = loadLastRecommendation();
-    const permission =
-      typeof window !== "undefined" && "Notification" in window
-        ? window.Notification.permission
-        : "unsupported";
-
-    setProviderProfiles(savedProfiles);
-    setForm(nextForm);
-    setSnapshots(loadSnapshots());
-    if (savedLastRecommendation) {
-      setRecommendation(savedLastRecommendation.recommendation);
-      setIsRecommendationRestored(true);
-    }
-    setNotificationSettings({
-      ...savedNotificationSettings,
-      permission
-    });
-    setIsHydrated(true);
+    const timerId = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timerId);
   }, []);
 
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-
-    const didSave = saveSettings(form);
-    if (!didSave) {
-      setStorageNotice("설정 저장에 실패했습니다. 브라우저 localStorage 사용 가능 여부를 확인해주세요.");
-    }
-  }, [form, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-
-    const didSave = saveProviderProfiles(providerProfiles);
-    if (!didSave) {
-      setStorageNotice("도구별 프로필 저장에 실패했습니다. 브라우저 localStorage 사용 가능 여부를 확인해주세요.");
-    }
-  }, [providerProfiles, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-
-    const didSave = saveNotificationSettings(notificationSettings);
-    if (!didSave) {
-      setStorageNotice("알림 설정 저장에 실패했습니다. 브라우저 localStorage 접근을 확인해주세요.");
-    }
-  }, [notificationSettings, isHydrated]);
-
-  const handleFormChange = (nextForm: UsageFormSettings) => {
-    if (nextForm.providerType !== form.providerType) {
-      const nextProviderForm = buildFormForProvider(
-        nextForm,
-        nextForm.providerType,
-        providerProfiles
-      );
-      setForm(nextProviderForm);
-      return;
-    }
-
-    setForm(nextForm);
-  };
-
-  const handleProfileChange = (
-    providerType: ActiveProviderType,
-    profile: ProviderProfile
-  ) => {
-    const nextProfile = withProviderDefaults(providerType, profile);
-    const nextProfiles = {
-      ...providerProfiles,
-      [providerType]: nextProfile
-    };
-
-    setProviderProfiles(nextProfiles);
-    setWeekNotice("");
-
-    if (form.providerType === providerType) {
-      setForm((current) => buildFormForProvider(current, providerType, nextProfiles));
-    }
-  };
-
-  const handleStartNewWeek = (providerType: ActiveProviderType) => {
-    const now = new Date();
-    const currentProfile = withProviderDefaults(
-      providerType,
-      providerProfiles[providerType]
-    );
-    const nextProfile: ProviderProfile = {
-      ...currentProfile,
-      weekId: buildWeekId(providerType, now),
-      weekStartedAt: now.toISOString(),
-      weeklyResetAt: buildDefaultWeeklyResetAt(now)
-    };
-
-    handleProfileChange(providerType, nextProfile);
-    setWeekNotice(`${nextProfile.providerName} 새 주간이 생성되었습니다.`);
-  };
-
-  const handleSubmit = () => {
-    const nextErrors = validateForm(form);
-    setErrors(nextErrors);
-
-    if (nextErrors.length > 0) {
-      return;
-    }
-
-    const normalizedSessionRemainingPct = normalizeDisplayedUsageValue(
-      form.providerType,
-      form.sessionRemainingPct
-    );
-    const normalizedWeeklyRemainingPct = normalizeDisplayedUsageValue(
-      form.providerType,
-      form.weeklyRemainingPct
-    );
-    const activeProfile = withProviderDefaults(
-      form.providerType,
-      providerProfiles[form.providerType]
-    );
-    const editingSnapshot = editingSnapshotId
-      ? snapshots.find((snapshot) => snapshot.id === editingSnapshotId) ?? null
-      : null;
-
-    if (editingSnapshotId && !editingSnapshot) {
-      setEditingSnapshotId(null);
-      setStorageNotice(
-        "수정할 기록을 찾지 못했습니다. 최근 기록에서 다시 수정하기를 눌러주세요."
-      );
-      return;
-    }
-
-    const didChangeProviderWhileEditing =
-      editingSnapshot &&
-      toActiveProviderType(editingSnapshot.providerType) !== form.providerType;
-    const snapshotWeekId =
-      editingSnapshot && !didChangeProviderWhileEditing
-        ? editingSnapshot.weekId ?? activeProfile.weekId
-        : activeProfile.weekId;
-    const snapshotWeeklyResetAt =
-      editingSnapshot && !didChangeProviderWhileEditing
-        ? editingSnapshot.weeklyResetAt || activeProfile.weeklyResetAt
-        : activeProfile.weeklyResetAt;
-    const snapshotDailySessionTarget =
-      editingSnapshot && !didChangeProviderWhileEditing
-        ? editingSnapshot.dailySessionTarget ?? activeProfile.dailySessionTarget
-        : activeProfile.dailySessionTarget;
-    const snapshotWorkdayStart =
-      editingSnapshot && !didChangeProviderWhileEditing
-        ? editingSnapshot.workdayStart ?? activeProfile.workdayStart
-        : activeProfile.workdayStart;
-    const snapshotWorkdayEnd =
-      editingSnapshot && !didChangeProviderWhileEditing
-        ? editingSnapshot.workdayEnd ?? activeProfile.workdayEnd
-        : activeProfile.workdayEnd;
-
-    const snapshot: UsageSnapshot = {
-      id: editingSnapshot?.id ?? crypto.randomUUID(),
-      weekId: snapshotWeekId,
-      providerType: form.providerType,
-      providerName: getProviderName(form),
-      createdAt: editingSnapshot?.createdAt ?? new Date().toISOString(),
-      sessionRemainingPct: normalizedSessionRemainingPct,
-      weeklyRemainingPct: normalizedWeeklyRemainingPct,
-      sessionDisplayPct: form.sessionRemainingPct,
-      weeklyDisplayPct: form.weeklyRemainingPct,
-      inputDirection: getProviderUsageDirection(form.providerType),
-      weeklyResetAt: snapshotWeeklyResetAt,
-      dailySessionTarget: snapshotDailySessionTarget,
-      workdayStart: snapshotWorkdayStart,
-      workdayEnd: snapshotWorkdayEnd,
-      taskRiskType: form.taskRiskType,
-      memo: form.memo.trim() || undefined
-    };
-
-    const calculationSourceSnapshots = editingSnapshot
-      ? snapshots.map((currentSnapshot) =>
-          currentSnapshot.id === editingSnapshot.id ? snapshot : currentSnapshot
-        )
-      : snapshots;
-    const calculationSnapshots = getCalculationSnapshots(
-      calculationSourceSnapshots,
-      form.providerType,
-      snapshotWeekId
-    );
-    const recommendationResult = calculateUsageRecommendation(
-      {
-        sessionRemainingPct: normalizedSessionRemainingPct,
-        weeklyRemainingPct: normalizedWeeklyRemainingPct,
-        weeklyResetAt: snapshotWeeklyResetAt,
-        dailySessionTarget: snapshotDailySessionTarget,
-        workdayStart: snapshotWorkdayStart,
-        workdayEnd: snapshotWorkdayEnd
-      },
-      calculationSnapshots
-    );
-    const { persisted, snapshots: nextSnapshots } = editingSnapshot
-      ? updateSnapshot(snapshot)
-      : saveSnapshot(snapshot);
-    setSnapshots(nextSnapshots);
-    setRecommendation(recommendationResult);
-    setIsRecommendationRestored(false);
-    setEditingSnapshotId(null);
-    const didSaveLastRecommendation = saveLastRecommendation({
-      savedAt: new Date().toISOString(),
-      providerType: form.providerType,
-      recommendation: recommendationResult
-    });
-
-    if (!persisted) {
-      setStorageNotice("기록 저장에 실패했습니다. 브라우저에서 localStorage가 차단됐을 수 있습니다.");
-    } else if (!didSaveLastRecommendation) {
-      setStorageNotice(
-        "마지막 계산 결과 저장에 실패했습니다. 지금 결과는 보이지만 새로고침 후 복원되지 않을 수 있습니다."
-      );
-    } else {
-      setStorageNotice("");
-    }
-  };
-
-  const handleEditSnapshot = (
-    snapshot: UsageSnapshot,
-    snapshotForm: UsageFormSettings
-  ) => {
-    setForm(
-      buildFormForProvider(
+  const result = useMemo(
+    () =>
+      calculatePacer(
         {
-          ...snapshotForm,
-          inputModeVersion: 2
+          remainingPct,
+          resetWeekday,
+          workdayStart,
+          workdayEnd
         },
-        snapshotForm.providerType,
-        providerProfiles
-      )
+        now
+      ),
+    [remainingPct, resetWeekday, workdayStart, workdayEnd, now]
+  );
+  const selectedResetWeekday =
+    RESET_WEEKDAYS.find((weekday) => weekday.value === resetWeekday) ??
+    RESET_WEEKDAYS[1];
+  const dalkomi = DALKOMI_IMAGES[result.status];
+
+  const openHelp = () => {
+    const dialog = helpDialogRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+      return;
+    }
+
+    dialog.setAttribute("open", "");
+  };
+
+  const updateRemainingPct = (value: string) => {
+    const parsedValue = Number(value);
+    setRemainingPct(
+      Number.isFinite(parsedValue)
+        ? Math.min(100, Math.max(0, parsedValue))
+        : 0
     );
-    setEditingSnapshotId(snapshot.id);
-    setErrors([]);
-    setStorageNotice("");
   };
-
-  const handleCancelEdit = () => {
-    setEditingSnapshotId(null);
-    setErrors([]);
-  };
-
-  const handleDeleteSnapshot = (snapshotId: string) => {
-    const { persisted, snapshots: nextSnapshots } = removeSnapshot(snapshotId);
-    setSnapshots(nextSnapshots);
-    if (editingSnapshotId === snapshotId) {
-      setEditingSnapshotId(null);
-    }
-
-    if (!persisted) {
-      setStorageNotice("기록 삭제 저장에 실패했습니다. 브라우저 localStorage 접근 상태를 확인해주세요.");
-    } else {
-      setStorageNotice("");
-    }
-  };
-
-  const handleClearSnapshots = () => {
-    const { persisted, snapshots: nextSnapshots } = clearSnapshots();
-    setSnapshots(nextSnapshots);
-    setEditingSnapshotId(null);
-
-    if (!persisted) {
-      setStorageNotice("전체 삭제 저장에 실패했습니다. 브라우저 localStorage 접근 상태를 확인해주세요.");
-    } else {
-      setStorageNotice("");
-    }
-  };
-
-  const handleRequestPermission = async () => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      setNotificationSettings((current) => ({
-        ...current,
-        permission: "unsupported"
-      }));
-      return;
-    }
-
-    const permission = await window.Notification.requestPermission();
-    setNotificationSettings((current) => ({ ...current, permission }));
-  };
-
-  const handleSendTestNotification = () => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      return;
-    }
-
-    if (window.Notification.permission !== "granted") {
-      return;
-    }
-
-    const message =
-      recommendation?.status === "danger"
-        ? "지금은 짧은 작업 위주가 더 안전합니다."
-        : "작업 후 잔여율을 다시 입력해 페이스를 점검해보세요.";
-
-    new window.Notification("AI Pacer 테스트 알림", {
-      body: message
-    });
-
-    setNotificationSettings((current) => ({
-      ...current,
-      lastTestAt: new Date().toISOString(),
-      permission: window.Notification.permission
-    }));
-  };
-
-  const heroCopy = buildHeroCopy(snapshots, recommendation);
-  const isInputPanelOpen = snapshots.length === 0 || Boolean(editingSnapshotId);
-  const inputPanelSummary = editingSnapshotId
-    ? "수정 중인 기록 저장"
-    : snapshots.length === 0
-      ? "첫 잔여율 입력"
-      : "새 잔여율 입력";
-  const inputPanelDescription = editingSnapshotId
-    ? "불러온 기록을 덮어써서 바로잡습니다."
-    : snapshots.length === 0
-      ? "서비스 화면 숫자 2개만 넣으면 첫 페이스가 열립니다."
-      : "필요할 때만 열어 최신 잔여율을 다시 입력합니다.";
 
   return (
-    <div className="content-stack">
-      <section className="hero-panel">
-        <div className="hero-grid">
-          <div>
-            <p className="eyebrow">{heroCopy.eyebrow}</p>
-            <h1>{heroCopy.title}</h1>
-            <p className="lead hero-decision-copy">{heroCopy.body}</p>
-          </div>
+    <section
+      className={`pacer-app pacer-app--${variant}`}
+      aria-labelledby="pacer-title"
+    >
+      <div className="pacer-layout">
+        <div className="pacer-inputs">
+          <header className="pacer-tool-head">
+            <div>
+              <strong className="pacer-wordmark">AI Pacer</strong>
+              <h1 id="pacer-title">오늘, 얼마나 달려도 될까?</h1>
+            </div>
+            <button
+              className="pacer-icon-button"
+              type="button"
+              aria-label="계산 기준 보기"
+              title="계산 기준 보기"
+              aria-controls="pacer-help-dialog"
+              aria-haspopup="dialog"
+              onClick={openHelp}
+            >
+              ?
+            </button>
+          </header>
 
-          <HeroPaceDashboard
-            recommendation={recommendation}
-            snapshotCount={snapshots.length}
-          />
-        </div>
-
-        <ProviderRaceDashboard snapshots={snapshots} />
-      </section>
-
-      {storageNotice ? (
-        <div className="warning-box" role="alert">
-          <strong>저장소 안내</strong>
-          <p>{storageNotice}</p>
-        </div>
-      ) : null}
-
-      <div className="pacer-workbench">
-        <RecommendationCard
-          recommendation={recommendation}
-          eyebrow={isRecommendationRestored ? "마지막 계산 결과" : "계산 결과"}
-        />
-
-        <details
-          className="input-disclosure"
-          data-testid="pacer-input-panel"
-          open={isInputPanelOpen}
-        >
-          <summary className="input-summary">
-            <span className="input-summary-badge" aria-hidden="true">
-              IN
-            </span>
-            <span>
-              <strong>{inputPanelSummary}</strong>
-              <small>{inputPanelDescription}</small>
-            </span>
-          </summary>
-          <div className="input-disclosure-body">
-            <UsageInputForm
-              form={form}
-              errors={errors}
-              editNotice={
-                editingSnapshotId
-                  ? "저장된 기록을 수정 중입니다. 저장하면 기존 기록이 새로 추가되지 않고 덮어써집니다."
-                  : undefined
+          <div className="pacer-field">
+            <div className="pacer-field-heading">
+              <label htmlFor="weekly-remaining">주간 남은 용량</label>
+              <span>0-100%</span>
+            </div>
+            <div className="pacer-number-input">
+              <input
+                id="weekly-remaining"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                max="100"
+                step="1"
+                value={remainingPct}
+                onChange={(event) =>
+                  updateRemainingPct(event.target.value)
+                }
+              />
+              <span aria-hidden="true">%</span>
+            </div>
+            <input
+              className="pacer-range"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={remainingPct}
+              aria-label="주간 남은 용량 슬라이더"
+              onChange={(event) =>
+                updateRemainingPct(event.target.value)
               }
-              submitLabel={editingSnapshotId ? "수정 저장하기" : "지금 페이스 계산하기"}
-              onChange={handleFormChange}
-              onSubmit={handleSubmit}
-              onCancelEdit={editingSnapshotId ? handleCancelEdit : undefined}
-            />
-            <WeeklySettingsPanel
-              activeProviderType={form.providerType}
-              profiles={providerProfiles}
-              weekNotice={weekNotice}
-              onChangeProfile={handleProfileChange}
-              onStartNewWeek={handleStartNewWeek}
+              style={{
+                "--range-value": `${remainingPct}%`
+              } as React.CSSProperties}
             />
           </div>
-        </details>
+
+          <fieldset className="pacer-field pacer-weekdays">
+            <legend>초기화 요일</legend>
+            <div className="pacer-segmented" role="group">
+              {RESET_WEEKDAYS.map((weekday) => (
+                <button
+                  key={weekday.value}
+                  type="button"
+                  aria-label={weekday.label}
+                  aria-pressed={resetWeekday === weekday.value}
+                  onClick={() => setResetWeekday(weekday.value)}
+                >
+                  {weekday.shortLabel}
+                </button>
+              ))}
+            </div>
+            <p className="pacer-selection-note" aria-live="polite">
+              선택: {selectedResetWeekday.label} 0시 초기화
+            </p>
+          </fieldset>
+
+          <div className="pacer-worktime">
+            <div>
+              <strong>주 사용시간</strong>
+              <span>기본 09:00-18:00</span>
+            </div>
+            <div className="pacer-time-inputs">
+              <label>
+                <span className="sr-only">주 사용 시작 시간</span>
+                <input
+                  type="time"
+                  value={workdayStart}
+                  aria-invalid={Boolean(result.warning)}
+                  onChange={(event) =>
+                    setWorkdayStart(event.target.value)
+                  }
+                />
+              </label>
+              <span aria-hidden="true">-</span>
+              <label>
+                <span className="sr-only">주 사용 종료 시간</span>
+                <input
+                  type="time"
+                  value={workdayEnd}
+                  aria-invalid={Boolean(result.warning)}
+                  onChange={(event) => setWorkdayEnd(event.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          {result.warning ? (
+            <p className="pacer-inline-error" role="alert">
+              {result.warning} 계산은 기본 시간으로 표시합니다.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="pacer-results" aria-live="polite">
+          <section
+            className="pacer-coach"
+            data-status={result.status}
+            aria-labelledby="coach-title"
+          >
+            <div className="pacer-character">
+              <img
+                key={result.status}
+                src={dalkomi.image.src}
+                width={dalkomi.image.width}
+                height={dalkomi.image.height}
+                alt={dalkomi.alt}
+                data-character-status={result.status}
+              />
+            </div>
+            <div className="pacer-coach-copy">
+              <span className="pacer-status">달콤이 says</span>
+              <h2 id="coach-title">{result.title}</h2>
+              <p>{result.message}</p>
+              <div className="pacer-budget">
+                <span>오늘 권장 용량</span>
+                <strong>{formatPercent(result.dailyBudgetPct)}</strong>
+              </div>
+              <dl className="pacer-facts">
+                <div>
+                  <dt>초기화까지</dt>
+                  <dd>{formatResetDistance(result.hoursUntilReset)}</dd>
+                </div>
+                <div>
+                  <dt>남은 작업일</dt>
+                  <dd>{formatWorkdayCount(result.effectiveWorkdays)}</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+
+          <section
+            className="pacer-recommendations"
+            aria-labelledby="recommendation-title"
+          >
+            <header>
+              <h2 id="recommendation-title">오늘 작업 추천</h2>
+              <p>각 규모만 골라 진행할 때의 횟수</p>
+            </header>
+            <div className="pacer-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">규모</th>
+                    <th scope="col">기준</th>
+                    <th scope="col">추천</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.workEstimates.map((estimate) => (
+                    <tr key={estimate.id}>
+                      <th scope="row">
+                        <span className="pacer-size-mark">
+                          {estimate.label}
+                        </span>
+                      </th>
+                      <td>
+                        <strong>{estimate.example}</strong>
+                        <span>
+                          약 {estimate.capacityCostPct}% /{" "}
+                          {estimate.durationMinutes}분
+                        </span>
+                      </td>
+                      <td>
+                        <strong className="pacer-count">
+                          {estimate.recommendedCount}
+                        </strong>
+                        <span>회</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="pacer-disclaimer">
+              실제 소모량은 모델, 문맥 길이, 작업 난이도에 따라 달라지는
+              추정치입니다.
+            </p>
+          </section>
+        </div>
       </div>
 
-      <section className="utility-panel">
-        <div>
-          <p className="eyebrow">도구 패널</p>
-          <h2>필요할 때만 열어보세요</h2>
-          <p className="muted">
-            추적, 기록 관리, 알림 설정은 매일 볼 필요가 없도록 접어두었습니다.
+      <dialog
+        id="pacer-help-dialog"
+        ref={helpDialogRef}
+        className="pacer-dialog"
+        aria-labelledby="pacer-help-title"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            closeDialog(helpDialogRef.current);
+          }
+        }}
+      >
+        <div className="pacer-dialog-body">
+          <header>
+            <div>
+              <span>AI Pacer</span>
+              <h2 id="pacer-help-title">계산 기준</h2>
+            </div>
+            <button
+              className="pacer-icon-button"
+              type="button"
+              aria-label="계산 기준 닫기"
+              title="닫기"
+              onClick={() => closeDialog(helpDialogRef.current)}
+            >
+              ×
+            </button>
+          </header>
+
+          <div className="pacer-help-list">
+            <section>
+              <h3>남은 용량</h3>
+              <p>
+                서비스 화면의 주간 잔여율을 넣습니다. 사용량만 보이면
+                100에서 사용량을 뺀 값을 사용합니다.
+              </p>
+            </section>
+            <section>
+              <h3>초기화 기준</h3>
+              <p>
+                선택한 요일 0시를 다음 초기화로 보고, 남은 주
+                사용시간에 용량을 나눕니다.
+              </p>
+            </section>
+            <section>
+              <h3>작업 규모</h3>
+              <p>
+                소 2%·20분, 중 6%·60분, 대 15%·150분을 보수적인
+                기준으로 사용합니다.
+              </p>
+            </section>
+          </div>
+
+          <p className="pacer-privacy-note">
+            입력값은 저장하거나 외부로 전송하지 않습니다.
           </p>
+
+          <div className="pacer-support">
+            <strong>무료 도구 후원</strong>
+            <div>
+              {SUPPORT_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
-
-        <div className="utility-disclosure-grid">
-          <UtilityDisclosure
-            badge="TR"
-            title="추적 대시보드"
-            summary={
-              snapshots.length > 0
-                ? "저장된 기록의 소모 흐름과 주간 효율을 봅니다."
-                : "첫 기록 이후 오늘 흐름을 보여줍니다."
-            }
-            testId="tracking-utility-panel"
-          >
-            <TrackingDashboard snapshots={snapshots} />
-          </UtilityDisclosure>
-
-          <UtilityDisclosure
-            badge="LOG"
-            title="기록 관리"
-            summary={`${snapshots.length}개 기록 저장 중 · 수정/삭제/JSON 내보내기`}
-            testId="history-utility-panel"
-          >
-            <SnapshotHistory
-              snapshots={snapshots}
-              onEditSnapshot={handleEditSnapshot}
-              onDeleteSnapshot={handleDeleteSnapshot}
-              onClearSnapshots={handleClearSnapshots}
-            />
-          </UtilityDisclosure>
-
-          <UtilityDisclosure
-            badge="NT"
-            title="알림 설정"
-            summary="권한 요청과 테스트 알림만 필요할 때 확인합니다."
-            testId="notification-utility-panel"
-          >
-            <NotificationSettings
-              settings={notificationSettings}
-              onRequestPermission={handleRequestPermission}
-              onSendTestNotification={handleSendTestNotification}
-              onChangePlaceholderEnabled={(value) =>
-                setNotificationSettings((current) => ({
-                  ...current,
-                  placeholderEnabled: value
-                }))
-              }
-              onChangePlaceholderTime={(value) =>
-                setNotificationSettings((current) => ({
-                  ...current,
-                  placeholderTime: value
-                }))
-              }
-            />
-          </UtilityDisclosure>
-        </div>
-      </section>
-    </div>
+      </dialog>
+    </section>
   );
 }

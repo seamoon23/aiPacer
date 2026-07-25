@@ -23,36 +23,46 @@ describe("static deployment assets", () => {
     const robotsPath = join(rootDir, "public", "robots.txt");
 
     expect(existsSync(robotsPath)).toBe(true);
-    expect(readFileSync(robotsPath, "utf8")).toContain("Sitemap: https://example.com/sitemap.xml");
+    expect(readFileSync(robotsPath, "utf8")).toContain(
+      "Sitemap: https://example.com/sitemap.xml"
+    );
   });
 
-  it("ships a web manifest for install metadata without app shortcuts", () => {
+  it("ships install metadata with the new mascot icons", () => {
     const manifestPath = join(rootDir, "public", "site.webmanifest");
-
-    expect(existsSync(manifestPath)).toBe(true);
-
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+
     expect(manifest.name).toBe("AI Pacer");
     expect(manifest.start_url).toBe("/ai-pacer/");
     expect(manifest.shortcuts).toBeUndefined();
+    expect(manifest.icons).toEqual([
+      expect.objectContaining({
+        src: "/assets/ai-pacer-icon-192.png",
+        sizes: "192x192"
+      }),
+      expect.objectContaining({
+        src: "/assets/ai-pacer-icon-512.png",
+        sizes: "512x512"
+      })
+    ]);
+
+    for (const icon of manifest.icons) {
+      expect(existsSync(join(rootDir, "public", icon.src))).toBe(true);
+    }
   });
 
-  it("ships a local favicon and manifest icon metadata", () => {
-    const faviconPath = join(rootDir, "public", "favicon.svg");
-    const manifestPath = join(rootDir, "public", "site.webmanifest");
-
-    expect(existsSync(faviconPath)).toBe(true);
-
-    const favicon = readFileSync(faviconPath, "utf8");
+  it("ships a permission-free Manifest V3 extension", () => {
+    const manifestPath = join(rootDir, "extension", "manifest.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 
-    expect(favicon).toContain("<svg");
-    expect(manifest.icons).toContainEqual({
-      src: "/favicon.svg",
-      sizes: "any",
-      type: "image/svg+xml",
-      purpose: "any maskable"
-    });
+    expect(manifest.manifest_version).toBe(3);
+    expect(manifest.action.default_popup).toBe("popup.html");
+    expect(manifest.permissions).toBeUndefined();
+    expect(manifest.host_permissions).toBeUndefined();
+
+    for (const iconPath of Object.values<string>(manifest.icons)) {
+      expect(existsSync(join(rootDir, "extension", iconPath))).toBe(true);
+    }
   });
 
   it("generates a static sitemap containing every public route", async () => {

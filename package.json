@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "astro dev --force",
     "build": "astro build",
+    "build:extension": "vite build --config extension/vite.config.ts && node extension/scripts/copy-static.mjs",
+    "build:all": "npm run build && npm run build:extension",
     "preview": "astro preview",
     "test": "vitest run",
     "typecheck": "astro check"
@@ -25,6 +27,7 @@
     "@types/react-dom": "^19.0.4",
     "jsdom": "^26.0.0",
     "typescript": "^5.7.3",
+    "vite": "^6.4.3",
     "vitest": "^3.0.5"
   }
 }

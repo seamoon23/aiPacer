@@ -1,46 +1,130 @@
 ---
+import dalkomiCharacter from "../assets/dalkomi-maintain.webp";
 import Layout from "../components/Layout.astro";
 ---
 
 <Layout
-  title="AI Pacer - About"
-  description="AI Pacer와 무료 웹 유틸리티 허브의 목적을 소개합니다."
+  title="AI Pacer - 달콤이와 도구 소개"
+  description="AI Pacer의 사감 선생님 코치 달콤이와 주간 AI 용량 계산 방식을 소개합니다."
   pathname="/about/"
 >
-  <section class="content-panel">
-    <p class="eyebrow">About</p>
-    <h1>AI Pacer와 이 허브가 지향하는 것</h1>
-    <p class="lead">
-      이 프로젝트는 여러 개의 무료 웹 유틸리티를 한 도메인 안에서 제공하기 위한 정적 웹앱입니다. 첫 번째 도구인 AI Pacer는 AI 사용량의 “정확한 공식 추적”이 아니라, 서비스 화면에 보이는 숫자를 직접 입력해 작업 페이스를 잡도록 돕는 계산 도구입니다.
-    </p>
-  </section>
+  <article class="about-page">
+    <header class="about-intro">
+      <div class="about-copy">
+        <p class="eyebrow">ABOUT DALKOMI</p>
+        <h1>달콤이가 오늘의 페이스를 봐드립니다</h1>
+        <p class="lead">
+          AI Pacer의 코치는 실제 3살 샴고양이 달콤이입니다. 집에서는
+          <strong>돼지</strong>라는 별명으로도 불립니다. 느긋한 표정과 달리
+          할 일을 고를 때만큼은 굵은 안경을 쓴 사감 선생님처럼 단호합니다.
+        </p>
 
-  <section class="content-panel">
-    <div class="info-grid">
-      <article class="card">
-        <h2>왜 수동 입력 방식인가요?</h2>
-        <p class="muted">
-          이번 1차 MVP는 서버, 로그인, API 연동, 자동 감지를 제외하고도 충분히 유용한 판단 도구를 빠르게 제공하는 데 초점을 맞췄습니다. 그래서 브라우저 안에서 직접 입력하고 계산하는 구조를 선택했습니다.
+        <dl class="about-facts" aria-label="달콤이 프로필">
+          <div>
+            <dt>이름</dt>
+            <dd>달콤이</dd>
+          </div>
+          <div>
+            <dt>나이</dt>
+            <dd>3살</dd>
+          </div>
+          <div>
+            <dt>품종</dt>
+            <dd>샴고양이</dd>
+          </div>
+          <div>
+            <dt>별명</dt>
+            <dd>돼지</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="about-pair" aria-label="실제 달콤이와 AI Pacer 캐릭터">
+        <figure class="about-figure">
+          <img
+            src="/assets/dalkomi-portrait.webp"
+            width="900"
+            height="1948"
+            alt="햇빛이 드는 침대에 앉아 정면을 바라보는 실제 샴고양이 달콤이"
+          />
+          <figcaption>실제 달콤이</figcaption>
+        </figure>
+        <figure class="about-figure">
+          <img
+            src={dalkomiCharacter.src}
+            width={dalkomiCharacter.width}
+            height={dalkomiCharacter.height}
+            alt="굵은 안경을 쓰고 계획표를 든 달콤이 캐릭터"
+          />
+          <figcaption>AI Pacer의 달콤이</figcaption>
+        </figure>
+      </div>
+    </header>
+
+    <section class="about-story" aria-labelledby="dalkomi-story-title">
+      <div class="about-story-copy">
+        <p class="eyebrow">THE REAL COACH</p>
+        <h2 id="dalkomi-story-title">엄격한 표정, 다정한 계산</h2>
+        <p>
+          달콤이는 상황에 따라 독려, 응원, 유지, 주의, 휴식의 표정으로
+          오늘의 작업량을 알려줍니다. 제복이나 완장 대신 굵은 안경과
+          가디건만 남겨, 선생님다운 단호함과 집고양이다운 편안함을 함께
+          담았습니다.
         </p>
-      </article>
-      <article class="card">
-        <h2>어떤 문구를 중요하게 보나요?</h2>
-        <p class="muted">
-          사용자가 직접 입력한다는 점, 계산 결과가 추정치라는 점, 서버 저장 없이 브라우저에서만 계산한다는 점을 UI 전반에서 명확히 전달하는 것을 우선합니다.
-        </p>
-      </article>
-      <article class="card">
-        <h2>AI Pacer 화면에서 설명을 줄인 이유</h2>
-        <p class="muted">
-          `/ai-pacer/` 화면은 작업 중 바로 판단하는 공간입니다. 그래서 긴 소개 문구는 About에 두고, 계산기 화면에서는 오늘 어느 AI를 더 써도 되는지, 언제 다시 입력해야 하는지, 남기지 않으려면 얼마나 더 밀어도 되는지를 먼저 보여줍니다.
-        </p>
-      </article>
-      <article class="card">
-        <h2>자동 수집을 하지 않습니다</h2>
-        <p class="muted">
-          AI Pacer는 Claude Code와 Codex 사용량을 자동 수집하지 않습니다. 사용자가 직접 입력한 표시값과 도구별 리셋/사용패턴 프로필을 바탕으로 브라우저 안에서만 추정합니다.
-        </p>
-      </article>
-    </div>
-  </section>
+      </div>
+
+      <div class="about-life-grid">
+        <figure class="about-life-figure about-life-figure--wide">
+          <img
+            src="/assets/dalkomi-relaxed.webp"
+            width="640"
+            height="295"
+            loading="lazy"
+            alt="소파에 길게 누워 배를 보이며 쉬는 달콤이"
+          />
+          <figcaption>쉴 때는 누구보다 확실하게</figcaption>
+        </figure>
+        <figure class="about-life-figure">
+          <img
+            src="/assets/dalkomi-sunlight.webp"
+            width="900"
+            height="1948"
+            loading="lazy"
+            alt="햇빛 아래 침대에 편하게 앉아 옆을 바라보는 달콤이"
+          />
+          <figcaption>볼 일은 또렷하게</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="about-method" aria-labelledby="about-method-title">
+      <header>
+        <p class="eyebrow">HOW IT WORKS</p>
+        <h2 id="about-method-title">계산기는 가볍게, 판단은 바로</h2>
+      </header>
+      <div class="about-method-grid">
+        <section>
+          <h3>두 가지 값만 입력</h3>
+          <p>
+            남은 용량과 초기화 요일만 받고, 사용시간은 필요할 때만
+            바꾸도록 줄였습니다.
+          </p>
+        </section>
+        <section>
+          <h3>보수적인 횟수 계산</h3>
+          <p>
+            남은 용량을 초기화 전의 주 사용시간에 나누고 소형 2%, 중형
+            6%, 대형 15% 기준으로 오늘 가능한 횟수를 추정합니다.
+          </p>
+        </section>
+        <section>
+          <h3>외부 서비스 연결 없음</h3>
+          <p>
+            로그인, API 키, 자동 사용량 수집 없이 웹과 Chrome 확장에서
+            같은 계산 로직을 사용합니다.
+          </p>
+        </section>
+      </div>
+    </section>
+  </article>
 </Layout>

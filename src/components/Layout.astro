@@ -27,7 +27,8 @@ const canonicalUrl = new URL(pathname, Astro.site ?? "https://example.com");
     <meta property="og:url" content={canonicalUrl.toString()} />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href={canonicalUrl.toString()} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/assets/ai-pacer-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/ai-pacer-icon-192.png" />
     <link rel="manifest" href="/site.webmanifest" />
     {
       structuredData.map((entry) => (
