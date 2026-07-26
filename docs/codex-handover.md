@@ -23,6 +23,8 @@
 - `/about/`에 실제 달콤이 사진, 3살·샴고양이·별명 돼지 프로필, 캐릭터 설명이 있습니다.
 - Privacy와 Terms 링크는 헤더와 푸터 메뉴에서 숨겼지만 직접 접근 가능한 페이지는 배포·확장용으로 유지합니다.
 - `extension/`에 권한 없는 Manifest V3 팝업 소스가 있습니다.
+- `release/chrome-web-store/`에 업로드 ZIP, 1280×800 스크린샷 2장, 440×280 프로모션 타일, 128×128 스토어 아이콘이 있습니다.
+- `npm run package:extension`은 확장을 다시 빌드하고 웹스토어 ZIP의 루트에 `manifest.json`이 있는지 검사합니다.
 - 후원 링크는 도움말에서 사용자가 직접 선택할 때만 외부 탭으로 열립니다.
 - 실제 광고 코드는 없고 광고 자리만 있습니다.
 
@@ -62,6 +64,7 @@ npm test
 npm run typecheck
 npm run build
 npm run build:extension
+npm run package:extension
 ```
 
 Chrome 로컬 설치 접근 경로는 `Chrome 주소창 > chrome://extensions > 개발자 모드 > 압축해제된 확장 프로그램을 로드합니다 > C:\codex\app\AiPacer\extension\dist`입니다.
@@ -69,7 +72,7 @@ Chrome 로컬 설치 접근 경로는 `Chrome 주소창 > chrome://extensions > 
 ## 다음 작업
 
 1. 실제 배포 도메인으로 `astro.config.mjs`, `src/lib/siteMetadata.ts`, `public/robots.txt`의 `https://example.com`을 교체합니다.
-2. Chrome Web Store 등록용 스크린샷, 상세 설명, 개인정보 안내를 준비합니다.
+2. `docs/chrome-web-store-release.md`를 따라 개발자 계정에서 ZIP과 스토어 이미지를 등록하고 검토를 요청합니다.
 3. 실제 광고 도입 시점에 광고 네트워크 정책과 배치를 다시 검토합니다.
 4. 작업 규모 기준은 사용자 피드백이 모인 뒤 조정합니다.
 

@@ -7,6 +7,7 @@
     "dev": "astro dev --force",
     "build": "astro build",
     "build:extension": "vite build --config extension/vite.config.ts && node extension/scripts/copy-static.mjs",
+    "package:extension": "npm run build:extension && powershell -NoProfile -ExecutionPolicy Bypass -File extension/scripts/package-store.ps1",
     "build:all": "npm run build && npm run build:extension",
     "preview": "astro preview",
     "test": "vitest run",

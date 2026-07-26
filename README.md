@@ -59,6 +59,7 @@ npm test
 npm run typecheck
 npm run build
 npm run build:extension
+npm run package:extension
 ```
 
 웹과 확장을 함께 빌드하려면 다음 명령을 사용합니다.
@@ -68,6 +69,7 @@ npm run build:all
 ```
 
 Chrome 확장 프로그램 로컬 설치 접근 경로는 [extension/README.md](extension/README.md)에 정리되어 있습니다.
+Chrome Web Store 제출 파일과 등록 문구는 [docs/chrome-web-store-release.md](docs/chrome-web-store-release.md)에 정리되어 있습니다.
 
 ## 제외 범위
 
