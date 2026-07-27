@@ -29,7 +29,7 @@
 - `npm run package:extension`은 확장을 다시 빌드하고 웹스토어 ZIP의 루트에 `manifest.json`이 있는지 검사합니다.
 - 후원 링크는 검증된 GitHub Sponsors와 Ko-fi를 제공하며 사용자가 직접 선택할 때만 외부 탭으로 열립니다.
 - 실제 광고 코드는 없고 광고 자리만 있습니다.
-- GitHub Pages 배포 주소는 `https://seamoon23.github.io/aiPacer/`, 개인정보처리방침은 `https://seamoon23.github.io/aiPacer/privacy/`입니다. `main` 푸시는 `.github/workflows/deploy.yml`을 실행합니다.
+- GitHub Pages 배포 주소는 `https://seamoon23.github.io/aiPacer/`, 개인정보처리방침은 `https://seamoon23.github.io/aiPacer/privacy/`입니다. 2026-07-28 첫 배포를 확인했으며 `main` 푸시는 `.github/workflows/deploy.yml`을 실행합니다.
 
 ## 상호작용 참고
 
@@ -74,10 +74,9 @@ Chrome 로컬 설치 접근 경로는 `Chrome 주소창 > chrome://extensions > 
 
 ## 다음 작업
 
-1. `main` 푸시 후 GitHub Pages 최초 배포와 공개 Privacy URL 응답을 확인합니다.
-2. `docs/chrome-web-store-release.md`를 따라 개발자 계정에서 ZIP, 스토어 이미지, Privacy URL을 등록하고 검토를 요청합니다.
-3. 실제 광고 도입 시점에 광고 네트워크 정책과 배치를 다시 검토합니다.
-4. 작업 규모 기준은 사용자 피드백이 모인 뒤 조정합니다.
+1. `docs/chrome-web-store-release.md`를 따라 개발자 계정에서 ZIP, 스토어 이미지, Privacy URL을 등록하고 검토를 요청합니다.
+2. 실제 광고 도입 시점에 광고 네트워크 정책과 배치를 다시 검토합니다.
+3. 작업 규모 기준은 사용자 피드백이 모인 뒤 조정합니다.
 
 ## 작업 제한
 

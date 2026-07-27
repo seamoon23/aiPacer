@@ -21,6 +21,6 @@
 
 ## 현재 다음 작업
 
-- [ ] GitHub Pages 최초 배포와 Privacy URL 확인
+- [x] GitHub Pages 첫 배포와 Privacy URL 확인 (2026-07-28)
 - [x] Chrome Web Store 등록 자료 준비
 - [ ] 실제 사용자 피드백 수집 후 작업 규모 기준 검토
