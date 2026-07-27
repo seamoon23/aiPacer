@@ -11,3 +11,13 @@ await copyFile(
 await cp(new URL("icons/", extensionRoot), new URL("icons/", distRoot), {
   recursive: true
 });
+await cp(
+  new URL("_locales/", extensionRoot),
+  new URL("_locales/", distRoot),
+  { recursive: true }
+);
+await mkdir(new URL("assets/", distRoot), { recursive: true });
+await copyFile(
+  new URL("../../public/assets/dalkomi-portrait.webp", import.meta.url),
+  new URL("assets/dalkomi-portrait.webp", distRoot)
+);

@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { calculatePacer } from "./pacerCalculator";
+import { calculatePacer, resolvePacerLocale } from "./pacerCalculator";
 
 describe("calculatePacer", () => {
+  it("uses Korean only for Korean browser locales", () => {
+    expect(resolvePacerLocale("ko-KR")).toBe("ko");
+    expect(resolvePacerLocale("en-US")).toBe("en");
+    expect(resolvePacerLocale("fr-FR")).toBe("en");
+  });
+
   it("spreads remaining capacity across the next seven work windows", () => {
     const now = new Date("2026-07-27T09:00:00");
     const result = calculatePacer(
@@ -113,5 +119,75 @@ describe("calculatePacer", () => {
     expect(result.dailyBudgetPct).toBeLessThan(2);
     expect(result.status).toBe("unavailable");
     expect(result.statusLabel).toBe("휴식");
+  });
+  it("uses a reset time later on the selected weekday", () => {
+    const now = new Date("2026-07-27T09:00:00");
+    const result = calculatePacer(
+      {
+        remainingPct: 70,
+        resetWeekday: 1,
+        resetTime: "12:30",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      now
+    );
+
+    expect(result.resetAt).toEqual(new Date("2026-07-27T12:30:00"));
+    expect(result.hoursUntilReset).toBeCloseTo(3.5, 5);
+    expect(result.remainingWorkMinutesToday).toBe(210);
+    expect(result.dailyBudgetPct).toBeCloseTo(70, 5);
+  });
+
+  it("moves to next week when today’s reset time has passed", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 70,
+        resetWeekday: 1,
+        resetTime: "08:00",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      new Date("2026-07-27T09:00:00")
+    );
+
+    expect(result.resetAt).toEqual(new Date("2026-08-03T08:00:00"));
+  });
+
+  it("returns English copy for a non-Korean locale", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 70,
+        resetWeekday: 1,
+        resetTime: "00:00",
+        workdayStart: "09:00",
+        workdayEnd: "18:00",
+        locale: "en"
+      },
+      new Date("2026-07-27T09:00:00")
+    );
+
+    expect(result.resetLabel).toBe("Monday at 00:00");
+    expect(result.title).toBe("Your pace looks good");
+    expect(result.workEstimates[0].example).toBe(
+      "Quick questions and copy edits"
+    );
+  });
+
+  it("falls back to midnight for an invalid reset time", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 50,
+        resetWeekday: 4,
+        resetTime: "25:00",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      new Date("2026-07-27T09:00:00")
+    );
+
+    expect(result.resetTime).toBe("00:00");
+    expect(result.warningCodes).toContain("reset-time");
+    expect(result.warning).toContain("00:00");
   });
 });

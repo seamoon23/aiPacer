@@ -245,6 +245,34 @@
   font-weight: 750;
 }
 
+.pacer-reset-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pacer-line);
+}
+
+.pacer-reset-time label {
+  color: var(--pacer-ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.pacer-reset-time input {
+  width: 112px;
+  height: 38px;
+  padding: 0 9px;
+  border: 1px solid var(--pacer-line);
+  border-radius: 8px;
+  background: var(--pacer-surface);
+  color: var(--pacer-ink);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
 .pacer-worktime {
   display: flex;
   align-items: center;
@@ -564,6 +592,47 @@
   font-size: 1.7rem;
 }
 
+.pacer-real-dalkomi {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin: 0 0 6px;
+  padding: 12px;
+  border: 1px solid #d6dfe2;
+  border-radius: 8px;
+  background: #edf2f6;
+}
+
+.pacer-real-dalkomi img {
+  display: block;
+  width: 118px;
+  height: 118px;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: 50% 48%;
+}
+
+.pacer-real-dalkomi figcaption {
+  min-width: 0;
+}
+
+.pacer-real-dalkomi strong,
+.pacer-real-dalkomi span {
+  display: block;
+}
+
+.pacer-real-dalkomi strong {
+  margin-bottom: 5px;
+  font-size: 0.95rem;
+}
+
+.pacer-real-dalkomi span {
+  color: #596861;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
 .pacer-help-list {
   display: grid;
   gap: 0;
@@ -622,6 +691,18 @@
   text-underline-offset: 3px;
 }
 
+.pacer-app[data-locale="en"] .pacer-tool-head h1 {
+  max-width: 14ch;
+  font-size: 2.85rem;
+  word-break: normal;
+}
+
+.pacer-app[data-locale="en"] .pacer-coach h2,
+.pacer-app[data-locale="en"] .pacer-coach-copy > p,
+.pacer-app[data-locale="en"] .pacer-recommendations td:nth-child(2) strong {
+  word-break: normal;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -656,6 +737,10 @@
 .pacer-app--extension .pacer-tool-head h1 {
   max-width: none;
   font-size: 1.8rem;
+}
+
+.pacer-app--extension[data-locale="en"] .pacer-tool-head h1 {
+  font-size: 1.65rem;
 }
 
 .pacer-app--extension .pacer-number-input input {
@@ -837,6 +922,15 @@
 
   .pacer-help-list p,
   .pacer-privacy-note {
+    color: #a8b6ae;
+  }
+
+  .pacer-real-dalkomi {
+    border-color: #3b4650;
+    background: #202832;
+  }
+
+  .pacer-real-dalkomi span {
     color: #a8b6ae;
   }
 

@@ -1,14 +1,45 @@
 export const DEFAULT_WORKDAY_START = "09:00";
 export const DEFAULT_WORKDAY_END = "18:00";
+export const DEFAULT_RESET_TIME = "00:00";
+
+export type PacerLocale = "ko" | "en";
 
 export const RESET_WEEKDAYS = [
-  { value: 0, shortLabel: "일", label: "일요일" },
-  { value: 1, shortLabel: "월", label: "월요일" },
-  { value: 2, shortLabel: "화", label: "화요일" },
-  { value: 3, shortLabel: "수", label: "수요일" },
-  { value: 4, shortLabel: "목", label: "목요일" },
-  { value: 5, shortLabel: "금", label: "금요일" },
-  { value: 6, shortLabel: "토", label: "토요일" }
+  {
+    value: 0,
+    shortLabel: { ko: "일", en: "S" },
+    label: { ko: "일요일", en: "Sunday" }
+  },
+  {
+    value: 1,
+    shortLabel: { ko: "월", en: "M" },
+    label: { ko: "월요일", en: "Monday" }
+  },
+  {
+    value: 2,
+    shortLabel: { ko: "화", en: "T" },
+    label: { ko: "화요일", en: "Tuesday" }
+  },
+  {
+    value: 3,
+    shortLabel: { ko: "수", en: "W" },
+    label: { ko: "수요일", en: "Wednesday" }
+  },
+  {
+    value: 4,
+    shortLabel: { ko: "목", en: "T" },
+    label: { ko: "목요일", en: "Thursday" }
+  },
+  {
+    value: 5,
+    shortLabel: { ko: "금", en: "F" },
+    label: { ko: "금요일", en: "Friday" }
+  },
+  {
+    value: 6,
+    shortLabel: { ko: "토", en: "S" },
+    label: { ko: "토요일", en: "Saturday" }
+  }
 ] as const;
 
 export type ResetWeekday = (typeof RESET_WEEKDAYS)[number]["value"];
@@ -19,12 +50,15 @@ export type PaceStatus =
   | "caution"
   | "unavailable";
 export type WorkSize = "small" | "medium" | "large";
+export type PacerWarningCode = "reset-time" | "work-window";
 
 export type PacerCalculationInput = {
   remainingPct: number;
   resetWeekday: ResetWeekday;
+  resetTime?: string;
   workdayStart?: string;
   workdayEnd?: string;
+  locale?: PacerLocale;
 };
 
 export type WorkEstimate = {
@@ -49,44 +83,77 @@ export type PacerCalculationResult = {
   title: string;
   message: string;
   workEstimates: WorkEstimate[];
+  resetTime: string;
   workdayStart: string;
   workdayEnd: string;
   warning: string | null;
+  warningCodes: PacerWarningCode[];
 };
 
 type WorkPreset = Omit<WorkEstimate, "recommendedCount">;
+type LocalizedWorkPreset = Omit<WorkPreset, "label" | "example"> & {
+  label: Record<PacerLocale, string>;
+  example: Record<PacerLocale, string>;
+};
 
-const WORK_PRESETS: WorkPreset[] = [
+const WORK_PRESETS: LocalizedWorkPreset[] = [
   {
     id: "small",
-    label: "소",
-    example: "짧은 질문, 문구 정리",
+    label: { ko: "소", en: "S" },
+    example: {
+      ko: "짧은 질문, 문구 정리",
+      en: "Quick questions and copy edits"
+    },
     capacityCostPct: 2,
     durationMinutes: 20
   },
   {
     id: "medium",
-    label: "중",
-    example: "파일 수정, 검토와 검증",
+    label: { ko: "중", en: "M" },
+    example: {
+      ko: "파일 수정, 검토와 검증",
+      en: "File edits, review and checks"
+    },
     capacityCostPct: 6,
     durationMinutes: 60
   },
   {
     id: "large",
-    label: "대",
-    example: "여러 파일 분석과 구현",
+    label: { ko: "대", en: "L" },
+    example: {
+      ko: "여러 파일 분석과 구현",
+      en: "Multi-file analysis and build"
+    },
     capacityCostPct: 15,
     durationMinutes: 150
   }
 ];
 
-const STATUS_LABELS: Record<PaceStatus, string> = {
-  push: "집중",
-  encourage: "응원",
-  maintain: "유지",
-  caution: "주의",
-  unavailable: "휴식"
+const STATUS_LABELS: Record<
+  PacerLocale,
+  Record<PaceStatus, string>
+> = {
+  ko: {
+    push: "집중",
+    encourage: "응원",
+    maintain: "유지",
+    caution: "주의",
+    unavailable: "휴식"
+  },
+  en: {
+    push: "Focus",
+    encourage: "Go",
+    maintain: "Steady",
+    caution: "Caution",
+    unavailable: "Rest"
+  }
 };
+
+export function resolvePacerLocale(
+  language: string | undefined
+): PacerLocale {
+  return language?.toLowerCase().startsWith("ko") ? "ko" : "en";
+}
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -118,7 +185,8 @@ function parseTime(value: string | undefined): number | null {
 
 function resolveWorkWindow(
   workdayStart: string | undefined,
-  workdayEnd: string | undefined
+  workdayEnd: string | undefined,
+  locale: PacerLocale
 ): {
   start: string;
   end: string;
@@ -139,7 +207,10 @@ function resolveWorkWindow(
       end: DEFAULT_WORKDAY_END,
       startMinutes: 9 * 60,
       endMinutes: 18 * 60,
-      warning: "종료 시간은 시작 시간보다 최소 1시간 뒤여야 합니다."
+      warning:
+        locale === "ko"
+          ? "종료 시간은 시작 시간보다 최소 1시간 뒤여야 합니다."
+          : "End time must be at least one hour after start time."
     };
   }
 
@@ -148,6 +219,34 @@ function resolveWorkWindow(
     end: workdayEnd ?? DEFAULT_WORKDAY_END,
     startMinutes: requestedStart,
     endMinutes: requestedEnd,
+    warning: null
+  };
+}
+
+function resolveResetTime(
+  resetTime: string | undefined,
+  locale: PacerLocale
+): {
+  value: string;
+  minutes: number;
+  warning: string | null;
+} {
+  const requestedTime = parseTime(resetTime);
+
+  if (requestedTime === null) {
+    return {
+      value: DEFAULT_RESET_TIME,
+      minutes: 0,
+      warning:
+        locale === "ko"
+          ? "초기화 시간이 올바르지 않아 00:00을 사용합니다."
+          : "Reset time is invalid, so 00:00 is used."
+    };
+  }
+
+  return {
+    value: resetTime ?? DEFAULT_RESET_TIME,
+    minutes: requestedTime,
     warning: null
   };
 }
@@ -163,12 +262,19 @@ function atLocalMinutes(date: Date, minutesFromMidnight: number): Date {
   return value;
 }
 
-function getNextResetAt(resetWeekday: ResetWeekday, now: Date): Date {
-  const resetAt = new Date(now);
-  resetAt.setHours(0, 0, 0, 0);
-
-  const daysAhead = (resetWeekday - now.getDay() + 7) % 7 || 7;
+function getNextResetAt(
+  resetWeekday: ResetWeekday,
+  resetMinutes: number,
+  now: Date
+): Date {
+  const resetAt = atLocalMinutes(now, resetMinutes);
+  const daysAhead = (resetWeekday - now.getDay() + 7) % 7;
   resetAt.setDate(resetAt.getDate() + daysAhead);
+
+  if (resetAt.getTime() <= now.getTime()) {
+    resetAt.setDate(resetAt.getDate() + 7);
+  }
+
   return resetAt;
 }
 
@@ -237,7 +343,8 @@ function getPaceStatus(
 
 function buildWorkEstimates(
   dailyBudgetPct: number,
-  remainingWorkMinutesToday: number
+  remainingWorkMinutesToday: number,
+  locale: PacerLocale
 ): WorkEstimate[] {
   return WORK_PRESETS.map((preset) => {
     const capacityCount = Math.floor(
@@ -248,7 +355,11 @@ function buildWorkEstimates(
     );
 
     return {
-      ...preset,
+      id: preset.id,
+      label: preset.label[locale],
+      example: preset.example[locale],
+      capacityCostPct: preset.capacityCostPct,
+      durationMinutes: preset.durationMinutes,
       recommendedCount: Math.max(0, Math.min(capacityCount, timeCount))
     };
   });
@@ -257,7 +368,8 @@ function buildWorkEstimates(
 function getCoachCopy(
   status: PaceStatus,
   workEstimates: WorkEstimate[],
-  remainingWorkMinutesToday: number
+  remainingWorkMinutesToday: number,
+  locale: PacerLocale
 ): Pick<PacerCalculationResult, "title" | "message"> {
   const largeCount =
     workEstimates.find((estimate) => estimate.id === "large")
@@ -267,56 +379,93 @@ function getCoachCopy(
       ?.recommendedCount ?? 0;
 
   if (remainingWorkMinutesToday <= 0) {
-    return {
-      title: "오늘 주 사용시간은 끝났어요",
-      message: "새 작업은 다음 주 사용시간에 시작하는 편이 좋습니다."
-    };
+    return locale === "ko"
+      ? {
+          title: "오늘 주 사용시간은 끝났어요",
+          message: "새 작업은 다음 주 사용시간에 시작하는 편이 좋습니다."
+        }
+      : {
+          title: "Today’s work window is over",
+          message: "Start new work in your next scheduled work window."
+        };
   }
 
   if (status === "push") {
-    return {
-      title: "남기면 아까워요",
-      message:
-        largeCount > 0
-          ? `대형 작업 ${largeCount}회부터 힘 있게 밀어붙이세요.`
-          : "남은 시간 안에서 중형 작업부터 힘 있게 밀어붙이세요."
-    };
+    return locale === "ko"
+      ? {
+          title: "남기면 아까워요",
+          message:
+            largeCount > 0
+              ? `대형 작업 ${largeCount}회부터 힘 있게 밀어붙이세요.`
+              : "남은 시간 안에서 중형 작업부터 힘 있게 밀어붙이세요."
+        }
+      : {
+          title: "Don’t leave it unused",
+          message:
+            largeCount > 0
+              ? `Start strong with up to ${largeCount} large tasks.`
+              : "Start with medium tasks while there is still time."
+        };
   }
 
   if (status === "encourage") {
-    return {
-      title: "여유가 있습니다",
-      message:
-        mediumCount > 0
-          ? `중형 작업 ${mediumCount}회까지 진행한 뒤 잔여율을 확인하세요.`
-          : "소형 작업을 먼저 끝내고 잔여율을 다시 확인하세요."
-    };
+    return locale === "ko"
+      ? {
+          title: "여유가 있습니다",
+          message:
+            mediumCount > 0
+              ? `중형 작업 ${mediumCount}회까지 진행한 뒤 잔여율을 확인하세요.`
+              : "소형 작업을 먼저 끝내고 잔여율을 다시 확인하세요."
+        }
+      : {
+          title: "You have room",
+          message:
+            mediumCount > 0
+              ? `Do up to ${mediumCount} medium tasks, then check capacity again.`
+              : "Finish a small task first, then check capacity again."
+        };
   }
 
   if (status === "maintain") {
-    return {
-      title: "지금 페이스가 좋아요",
-      message: "중형 작업 하나 또는 소형 작업 여러 개로 현재 흐름을 유지하세요."
-    };
+    return locale === "ko"
+      ? {
+          title: "지금 페이스가 좋아요",
+          message: "중형 작업 하나 또는 소형 작업 여러 개로 현재 흐름을 유지하세요."
+        }
+      : {
+          title: "Your pace looks good",
+          message: "Keep the flow with one medium task or several small tasks."
+        };
   }
 
   if (status === "caution") {
-    return {
-      title: "짧게 끊어가세요",
-      message: "소형 작업만 골라 처리하고, 큰 작업은 초기화 뒤로 미루세요."
-    };
+    return locale === "ko"
+      ? {
+          title: "짧게 끊어가세요",
+          message: "소형 작업만 골라 처리하고, 큰 작업은 초기화 뒤로 미루세요."
+        }
+      : {
+          title: "Keep tasks short",
+          message: "Pick small tasks only and save large work until after reset."
+        };
   }
 
-  return {
-    title: "새 작업은 잠시 멈춰요",
-    message: "꼭 필요한 확인만 짧게 처리하고 초기화 뒤 다시 계산하세요."
-  };
+  return locale === "ko"
+    ? {
+        title: "새 작업은 잠시 멈춰요",
+        message: "꼭 필요한 확인만 짧게 처리하고 초기화 뒤 다시 계산하세요."
+      }
+    : {
+        title: "Pause new work for now",
+        message: "Handle only essential checks, then recalculate after reset."
+      };
 }
 
 export function calculatePacer(
   input: PacerCalculationInput,
   now = new Date()
 ): PacerCalculationResult {
+  const locale: PacerLocale = input.locale === "en" ? "en" : "ko";
   const remainingPct = clamp(
     Number.isFinite(input.remainingPct) ? input.remainingPct : 0,
     0,
@@ -325,11 +474,20 @@ export function calculatePacer(
   const resetWeekday = isResetWeekday(input.resetWeekday)
     ? input.resetWeekday
     : 1;
+  const resetTime = resolveResetTime(
+    input.resetTime ?? DEFAULT_RESET_TIME,
+    locale
+  );
   const workWindow = resolveWorkWindow(
     input.workdayStart,
-    input.workdayEnd
+    input.workdayEnd,
+    locale
   );
-  const resetAt = getNextResetAt(resetWeekday, now);
+  const resetAt = getNextResetAt(
+    resetWeekday,
+    resetTime.minutes,
+    now
+  );
   const workdayMinutes =
     workWindow.endMinutes - workWindow.startMinutes;
   const scheduledMinutes = getScheduledMinutesUntilReset(
@@ -355,7 +513,8 @@ export function calculatePacer(
   );
   const workEstimates = buildWorkEstimates(
     dailyBudgetPct,
-    remainingWorkMinutesToday
+    remainingWorkMinutesToday,
+    locale
   );
   const status = getPaceStatus(
     dailyBudgetPct,
@@ -364,16 +523,32 @@ export function calculatePacer(
   const coachCopy = getCoachCopy(
     status,
     workEstimates,
-    remainingWorkMinutesToday
+    remainingWorkMinutesToday,
+    locale
   );
   const weekday = RESET_WEEKDAYS.find(
     (option) => option.value === resetWeekday
   );
+  const warningCodes: PacerWarningCode[] = [];
+  const warnings: string[] = [];
+
+  if (resetTime.warning) {
+    warningCodes.push("reset-time");
+    warnings.push(resetTime.warning);
+  }
+
+  if (workWindow.warning) {
+    warningCodes.push("work-window");
+    warnings.push(workWindow.warning);
+  }
 
   return {
     remainingPct,
     resetAt,
-    resetLabel: `${weekday?.label ?? "월요일"} 0시`,
+    resetLabel:
+      locale === "ko"
+        ? `${weekday?.label.ko ?? "월요일"} ${resetTime.value}`
+        : `${weekday?.label.en ?? "Monday"} at ${resetTime.value}`,
     hoursUntilReset: Math.max(
       0,
       (resetAt.getTime() - now.getTime()) / 1000 / 60 / 60
@@ -382,12 +557,14 @@ export function calculatePacer(
     remainingWorkMinutesToday,
     dailyBudgetPct,
     status,
-    statusLabel: STATUS_LABELS[status],
+    statusLabel: STATUS_LABELS[locale][status],
     title: coachCopy.title,
     message: coachCopy.message,
     workEstimates,
+    resetTime: resetTime.value,
     workdayStart: workWindow.start,
     workdayEnd: workWindow.end,
-    warning: workWindow.warning
+    warning: warnings.length > 0 ? warnings.join(" ") : null,
+    warningCodes
   };
 }

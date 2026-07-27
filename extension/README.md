@@ -1,6 +1,6 @@
 # AI Pacer Chrome Extension
 
-웹 계산기와 같은 계산 로직과 화면을 사용하는 Manifest V3 팝업입니다. 브라우저 권한과 호스트 권한을 요청하지 않습니다.
+웹 계산기와 같은 계산 로직과 화면을 사용하는 Manifest V3 팝업입니다. 브라우저 권한과 호스트 권한을 요청하지 않습니다. Chrome UI 언어가 한국어이면 한국어, 그 외 언어이면 영어로 자동 표시합니다.
 
 ## 빌드
 
@@ -32,8 +32,8 @@ npm run package:extension
 C:\codex\app\AiPacer\extension\dist
 ```
 
-툴바의 AI Pacer 아이콘을 누르면 계산기 팝업이 열립니다.
+툴바의 AI Pacer 아이콘을 누르면 계산기 팝업이 열립니다. 초기화 요일과 시간을 바꿔 계산할 수 있고, 도움말에서 실제 달콤이 사진을 확인할 수 있습니다.
 
 ## 후원 링크
 
-도움말 팝업의 GitHub Sponsors와 Buy Me a Coffee 링크는 사용자가 직접 선택했을 때 새 탭으로 열립니다.
+도움말 팝업의 GitHub Sponsors와 Ko-fi 링크는 사용자가 직접 선택했을 때 새 탭으로 열립니다. 확인 결과 `https://github.com/sponsors/seamoon23`과 `https://ko-fi.com/seamoon23`은 공개 상태이며, 존재하지 않는 Buy Me a Coffee 프로필 링크는 제거했습니다. 결제는 외부 서비스에서 처리되며 AI Pacer는 결제 정보를 수집하거나 처리하지 않습니다.

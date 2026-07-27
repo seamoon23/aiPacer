@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "AI Pacer",
-  "version": "0.2.0",
-  "description": "주간 남은 AI 용량으로 오늘 가능한 작업 횟수를 계산합니다.",
+  "name": "__MSG_appName__",
+  "version": "0.3.0",
+  "description": "__MSG_appDescription__",
   "action": {
-    "default_title": "AI Pacer 열기",
+    "default_title": "__MSG_actionTitle__",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",
@@ -18,5 +18,6 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "default_locale": "ko"
 }

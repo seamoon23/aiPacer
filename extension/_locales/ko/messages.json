@@ -1,0 +1,11 @@
+{
+  "appName": {
+    "message": "AI Pacer"
+  },
+  "appDescription": {
+    "message": "주간 남은 AI 용량과 초기화 일정으로 오늘 가능한 작업 횟수를 계산합니다."
+  },
+  "actionTitle": {
+    "message": "AI Pacer 열기"
+  }
+}

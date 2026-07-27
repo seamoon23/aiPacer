@@ -2,20 +2,20 @@
   "name": "AI Pacer",
   "short_name": "AI Pacer",
   "description": "주간 남은 AI 용량을 오늘 작업 횟수로 바꾸는 간단한 계산기",
-  "start_url": "/ai-pacer/",
-  "scope": "/",
+  "start_url": "./ai-pacer/",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#eef2f5",
   "theme_color": "#145bd7",
   "icons": [
     {
-      "src": "/assets/ai-pacer-icon-192.png",
+      "src": "assets/ai-pacer-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/ai-pacer-icon-512.png",
+      "src": "assets/ai-pacer-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

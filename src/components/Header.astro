@@ -1,4 +1,6 @@
 ---
+import { withBasePath } from "../lib/siteMetadata";
+
 type Props = {
   pathname: string;
 };
@@ -6,18 +8,18 @@ type Props = {
 const { pathname } = Astro.props;
 
 const links = [
-  { href: "/", label: "홈" },
-  { href: "/ai-pacer/", label: "AI Pacer" },
-  { href: "/about/", label: "About" }
+  { route: "/", href: withBasePath("/"), label: "홈" },
+  { route: "/ai-pacer/", href: withBasePath("/ai-pacer/"), label: "AI Pacer" },
+  { route: "/about/", href: withBasePath("/about/"), label: "About" }
 ];
 ---
 
 <header class="site-header">
   <div class="header-bar">
-    <a class="brand-mark" href="/">
+    <a class="brand-mark" href={withBasePath("/")}>
       <img
         class="brand-icon"
-        src="/assets/ai-pacer-icon.png"
+        src={withBasePath("/assets/ai-pacer-icon.png")}
         width="44"
         height="44"
         alt=""
@@ -32,7 +34,7 @@ const links = [
         links.map((link) => (
           <a
             href={link.href}
-            class={pathname === link.href ? "is-active" : undefined}
+            class={pathname === link.route ? "is-active" : undefined}
           >
             {link.label}
           </a>

@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - `/ai-pacer/`는 입력과 결과가 한 화면에 있는 단일 계산기입니다.
-- 입력은 주간 남은 용량, 초기화 요일, 선택 가능한 주 사용시간뿐입니다.
+- 입력은 주간 남은 용량, 초기화 요일과 시간, 선택 가능한 주 사용시간뿐입니다.
 - 기록, localStorage, 알림, 도구 비교, 내보내기 기능은 제거했습니다.
 - 결과는 오늘 권장 용량과 소형, 중형, 대형 작업 추천 횟수입니다.
 - 코치는 실제 3살 샴고양이 달콤이를 바탕으로 만든 굵은 안경의 사감 선생님 캐릭터입니다.
@@ -23,10 +23,13 @@
 - `/about/`에 실제 달콤이 사진, 3살·샴고양이·별명 돼지 프로필, 캐릭터 설명이 있습니다.
 - Privacy와 Terms 링크는 헤더와 푸터 메뉴에서 숨겼지만 직접 접근 가능한 페이지는 배포·확장용으로 유지합니다.
 - `extension/`에 권한 없는 Manifest V3 팝업 소스가 있습니다.
-- `release/chrome-web-store/`에 업로드 ZIP, 1280×800 스크린샷 2장, 440×280 프로모션 타일, 128×128 스토어 아이콘이 있습니다.
+- 확장은 Chrome UI 언어가 한국어이면 한국어, 그 외에는 영어로 자동 표시하며 `_locales/ko`, `_locales/en`으로 이름과 설명도 현지화합니다.
+- 계산 기준 도움말에는 실제 달콤이 사진과 3살 샴고양이 프로필이 표시됩니다.
+- `release/chrome-web-store/`에 업로드 ZIP, 1280×800 스크린샷 3장, 440×280 프로모션 타일, 128×128 스토어 아이콘이 있습니다.
 - `npm run package:extension`은 확장을 다시 빌드하고 웹스토어 ZIP의 루트에 `manifest.json`이 있는지 검사합니다.
-- 후원 링크는 도움말에서 사용자가 직접 선택할 때만 외부 탭으로 열립니다.
+- 후원 링크는 검증된 GitHub Sponsors와 Ko-fi를 제공하며 사용자가 직접 선택할 때만 외부 탭으로 열립니다.
 - 실제 광고 코드는 없고 광고 자리만 있습니다.
+- GitHub Pages 배포 주소는 `https://seamoon23.github.io/aiPacer/`, 개인정보처리방침은 `https://seamoon23.github.io/aiPacer/privacy/`입니다. `main` 푸시는 `.github/workflows/deploy.yml`을 실행합니다.
 
 ## 상호작용 참고
 
@@ -34,7 +37,7 @@
 
 ## 계산 규칙
 
-- 다음 초기화: 선택한 요일의 다음 도래 시점 0시
+- 다음 초기화: 선택한 요일과 시간의 다음 도래 시점
 - 기본 사용시간: 매일 09:00부터 18:00
 - 소형: 2%, 20분
 - 중형: 6%, 60분
@@ -71,8 +74,8 @@ Chrome 로컬 설치 접근 경로는 `Chrome 주소창 > chrome://extensions > 
 
 ## 다음 작업
 
-1. 실제 배포 도메인으로 `astro.config.mjs`, `src/lib/siteMetadata.ts`, `public/robots.txt`의 `https://example.com`을 교체합니다.
-2. `docs/chrome-web-store-release.md`를 따라 개발자 계정에서 ZIP과 스토어 이미지를 등록하고 검토를 요청합니다.
+1. `main` 푸시 후 GitHub Pages 최초 배포와 공개 Privacy URL 응답을 확인합니다.
+2. `docs/chrome-web-store-release.md`를 따라 개발자 계정에서 ZIP, 스토어 이미지, Privacy URL을 등록하고 검토를 요청합니다.
 3. 실제 광고 도입 시점에 광고 네트워크 정책과 배치를 다시 검토합니다.
 4. 작업 규모 기준은 사용자 피드백이 모인 뒤 조정합니다.
 

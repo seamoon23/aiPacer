@@ -506,6 +506,12 @@ img {
   font-size: 2.55rem;
 }
 
+.legal-meta {
+  margin: 18px 0 0;
+  color: var(--site-muted);
+  font-size: 0.85rem;
+}
+
 .legal-sections {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -533,6 +539,13 @@ img {
   font-size: 0.9rem;
   line-height: 1.7;
   word-break: keep-all;
+}
+
+.legal-sections a {
+  color: var(--site-accent-strong);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .footer-bar {

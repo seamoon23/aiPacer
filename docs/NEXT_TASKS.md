@@ -2,11 +2,11 @@
 
 ## 우선순위 1
 
-1. 실제 배포 도메인 연결
-   - `astro.config.mjs`
-   - `src/lib/siteMetadata.ts`
-   - `public/robots.txt`
-2. Chrome Web Store 등록 자료 준비
+1. GitHub Pages 최초 배포 확인
+   - `https://seamoon23.github.io/aiPacer/`
+   - `https://seamoon23.github.io/aiPacer/privacy/`
+   - GitHub Actions `Deploy to GitHub Pages` 성공 여부
+2. Chrome Web Store 등록 및 검토 요청
    - 1280x800 또는 640x400 스크린샷
    - 한 줄 요약과 상세 설명
    - 권한 없음과 입력값 비저장 안내

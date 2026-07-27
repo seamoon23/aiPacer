@@ -15,7 +15,7 @@ describe("AiPacerApp", () => {
   });
 
   it("shows the immediate calculator without tracking controls", () => {
-    render(<AiPacerApp />);
+    render(<AiPacerApp locale="ko" />);
 
     expect(
       screen.getByRole("heading", {
@@ -35,7 +35,7 @@ describe("AiPacerApp", () => {
   });
 
   it("recalculates the three task counts as inputs change", () => {
-    render(<AiPacerApp />);
+    render(<AiPacerApp locale="ko" />);
 
     const mondayButton = screen.getByRole("button", { name: "월요일" });
     const tuesdayButton = screen.getByRole("button", { name: "화요일" });
@@ -49,7 +49,7 @@ describe("AiPacerApp", () => {
     expect(mondayButton).toHaveAttribute("aria-pressed", "false");
     expect(tuesdayButton).toHaveAttribute("aria-pressed", "true");
     expect(
-      screen.getByText("선택: 화요일 0시 초기화")
+      screen.getByText("선택: 화요일 00:00 초기화")
     ).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /달콤이/ })).toHaveAttribute(
       "data-character-status",
@@ -63,7 +63,7 @@ describe("AiPacerApp", () => {
   });
 
   it("opens the calculation guide with external support links", () => {
-    render(<AiPacerApp />);
+    render(<AiPacerApp locale="ko" />);
 
     const dialog = document.querySelector<HTMLDialogElement>(
       "#pacer-help-dialog"
@@ -88,10 +88,28 @@ describe("AiPacerApp", () => {
       "rel",
       expect.stringContaining("noopener")
     );
+    const kofiLink = screen.getByRole("link", {
+      name: "Ko-fi (PayPal)"
+    });
+    expect(kofiLink).toHaveAttribute(
+      "href",
+      "https://ko-fi.com/seamoon23"
+    );
+    expect(kofiLink).toHaveAttribute("target", "_blank");
+    expect(kofiLink).toHaveAttribute(
+      "rel",
+      expect.stringContaining("noopener")
+    );
+    expect(
+      screen.getByRole("img", { name: /실제 샴고양이 달콤이/ })
+    ).toHaveAttribute("src", "/aiPacer/assets/dalkomi-portrait.webp");
+    expect(
+      screen.queryByRole("link", { name: "Buy Me a Coffee" })
+    ).not.toBeInTheDocument();
   });
 
   it("warns when the work time range is invalid", () => {
-    render(<AiPacerApp />);
+    render(<AiPacerApp locale="ko" />);
 
     fireEvent.change(screen.getByLabelText("주 사용 시작 시간"), {
       target: { value: "18:00" }
@@ -106,10 +124,37 @@ describe("AiPacerApp", () => {
   });
 
   it("supports the compact extension presentation", () => {
-    const { container } = render(<AiPacerApp variant="extension" />);
+    const { container } = render(<AiPacerApp variant="extension" locale="ko" />);
 
     expect(container.firstElementChild).toHaveClass(
       "pacer-app--extension"
     );
+  });
+  it("recalculates against a custom reset time", () => {
+    render(<AiPacerApp locale="ko" />);
+
+    fireEvent.change(screen.getByLabelText("초기화 시간"), {
+      target: { value: "12:30" }
+    });
+
+    expect(
+      screen.getByText("선택: 월요일 12:30 초기화")
+    ).toBeInTheDocument();
+    expect(screen.getByText("4시간")).toBeInTheDocument();
+  });
+
+  it("renders English copy when the browser locale is English", () => {
+    render(<AiPacerApp variant="extension" locale="en" />);
+
+    expect(
+      screen.getByRole("heading", { name: "How much can I use today?" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Monday" })
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Dalkomi says")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Today’s task plan" })
+    ).toBeInTheDocument();
   });
 });

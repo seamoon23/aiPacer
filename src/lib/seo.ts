@@ -1,3 +1,5 @@
+import { SITE_URL } from "./siteMetadata";
+
 type StructuredDataNode = Record<string, unknown>;
 
 const FAQ_ITEMS = [
@@ -9,7 +11,7 @@ const FAQ_ITEMS = [
   {
     question: "어떤 값을 입력하나요?",
     answer:
-      "현재 남은 주간 용량과 초기화 요일을 입력합니다. 주 사용시간은 기본 09:00부터 18:00이며 필요하면 바꿀 수 있습니다."
+      "현재 남은 주간 용량과 초기화 요일·시간을 입력합니다. 주 사용시간은 기본 09:00부터 18:00이며 필요하면 바꿀 수 있습니다."
   },
   {
     question: "입력값을 저장하거나 서버로 전송하나요?",
@@ -34,7 +36,7 @@ export function getAiPacerStructuredData(pageUrl: string): StructuredDataNode[] 
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "AI Pacer",
-      url: "https://example.com/",
+      url: `${SITE_URL}/`,
       description:
         "로그인 없이 브라우저에서 바로 쓰는 간단한 웹 유틸리티 모음"
     },
@@ -52,7 +54,7 @@ export function getAiPacerStructuredData(pageUrl: string): StructuredDataNode[] 
         priceCurrency: "USD"
       },
       description:
-        "주간 남은 AI 용량과 초기화 요일로 오늘 가능한 소형, 중형, 대형 작업 횟수를 추정하는 무료 계산기"
+        "주간 남은 AI 용량과 초기화 일정으로 오늘 가능한 소형, 중형, 대형 작업 횟수를 추정하는 무료 계산기"
     },
     {
       "@context": "https://schema.org",

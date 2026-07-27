@@ -1,0 +1,11 @@
+{
+  "appName": {
+    "message": "AI Pacer"
+  },
+  "appDescription": {
+    "message": "Turn your remaining weekly AI capacity and reset schedule into today’s task counts."
+  },
+  "actionTitle": {
+    "message": "Open AI Pacer"
+  }
+}

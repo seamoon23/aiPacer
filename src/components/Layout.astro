@@ -2,6 +2,7 @@
 import Header from "./Header.astro";
 import Footer from "./Footer.astro";
 import "../styles/global.css";
+import { SITE_ORIGIN, withBasePath } from "../lib/siteMetadata";
 
 type Props = {
   title: string;
@@ -11,7 +12,7 @@ type Props = {
 };
 
 const { title, description, pathname, structuredData = [] } = Astro.props;
-const canonicalUrl = new URL(pathname, Astro.site ?? "https://example.com");
+const canonicalUrl = new URL(withBasePath(pathname), SITE_ORIGIN);
 ---
 
 <!doctype html>
@@ -27,9 +28,9 @@ const canonicalUrl = new URL(pathname, Astro.site ?? "https://example.com");
     <meta property="og:url" content={canonicalUrl.toString()} />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href={canonicalUrl.toString()} />
-    <link rel="icon" type="image/png" href="/assets/ai-pacer-icon.png" />
-    <link rel="apple-touch-icon" href="/assets/ai-pacer-icon-192.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/png" href={withBasePath("/assets/ai-pacer-icon.png")} />
+    <link rel="apple-touch-icon" href={withBasePath("/assets/ai-pacer-icon-192.png")} />
+    <link rel="manifest" href={withBasePath("/site.webmanifest")} />
     {
       structuredData.map((entry) => (
         <script

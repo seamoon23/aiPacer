@@ -2,6 +2,7 @@
 import AdPlaceholder from "../components/AdPlaceholder.astro";
 import Layout from "../components/Layout.astro";
 import UtilityCard from "../components/UtilityCard.astro";
+import { withBasePath } from "../lib/siteMetadata";
 ---
 
 <Layout
@@ -29,10 +30,10 @@ import UtilityCard from "../components/UtilityCard.astro";
     <div class="utility-grid">
       <UtilityCard
         title="AI Pacer"
-        description="주간 남은 용량과 초기화 요일을 넣고 오늘 가능한 소형, 중형, 대형 작업 횟수를 확인합니다."
-        href="/ai-pacer/"
+        description="주간 남은 용량과 초기화 일정을 넣고 오늘 가능한 소형, 중형, 대형 작업 횟수를 확인합니다."
+        href={withBasePath("/ai-pacer/")}
         badge="01"
-        imageSrc="/assets/ai-pacer-icon.png"
+        imageSrc={withBasePath("/assets/ai-pacer-icon.png")}
         imageAlt="굵은 안경을 쓴 샴고양이 달콤이 코치"
       />
       <UtilityCard

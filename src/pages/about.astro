@@ -1,6 +1,7 @@
 ---
 import dalkomiCharacter from "../assets/dalkomi-maintain.webp";
 import Layout from "../components/Layout.astro";
+import { withBasePath } from "../lib/siteMetadata";
 ---
 
 <Layout
@@ -42,7 +43,7 @@ import Layout from "../components/Layout.astro";
       <div class="about-pair" aria-label="실제 달콤이와 AI Pacer 캐릭터">
         <figure class="about-figure">
           <img
-            src="/assets/dalkomi-portrait.webp"
+            src={withBasePath("/assets/dalkomi-portrait.webp")}
             width="900"
             height="1948"
             alt="햇빛이 드는 침대에 앉아 정면을 바라보는 실제 샴고양이 달콤이"
@@ -76,7 +77,7 @@ import Layout from "../components/Layout.astro";
       <div class="about-life-grid">
         <figure class="about-life-figure about-life-figure--wide">
           <img
-            src="/assets/dalkomi-relaxed.webp"
+            src={withBasePath("/assets/dalkomi-relaxed.webp")}
             width="640"
             height="295"
             loading="lazy"
@@ -86,7 +87,7 @@ import Layout from "../components/Layout.astro";
         </figure>
         <figure class="about-life-figure">
           <img
-            src="/assets/dalkomi-sunlight.webp"
+            src={withBasePath("/assets/dalkomi-sunlight.webp")}
             width="900"
             height="1948"
             loading="lazy"
@@ -104,9 +105,9 @@ import Layout from "../components/Layout.astro";
       </header>
       <div class="about-method-grid">
         <section>
-          <h3>두 가지 값만 입력</h3>
+          <h3>두 가지 입력 묶음</h3>
           <p>
-            남은 용량과 초기화 요일만 받고, 사용시간은 필요할 때만
+            남은 용량과 초기화 일정만 받고, 사용시간은 필요할 때만
             바꾸도록 줄였습니다.
           </p>
         </section>

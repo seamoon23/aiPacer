@@ -1,6 +1,10 @@
+---
+import { withBasePath } from "../lib/siteMetadata";
+---
+
 <footer class="footer-bar">
   <p>AI Pacer는 달콤이의 한마디와 보수적인 계산 기준으로 오늘의 작업량을 제안합니다.</p>
   <div class="footer-links">
-    <a href="/about/">달콤이와 AI Pacer 소개</a>
+    <a href={withBasePath("/about/")}>달콤이와 AI Pacer 소개</a>
   </div>
 </footer>
