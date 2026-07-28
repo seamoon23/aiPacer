@@ -10,13 +10,16 @@ import {
   DEFAULT_RESET_TIME,
   DEFAULT_WORKDAY_END,
   DEFAULT_WORKDAY_START,
+  PACER_PLANS,
   RESET_WEEKDAYS,
   resolvePacerLocale
 } from "../lib/pacerCalculator";
 import type {
   PaceStatus,
   PacerLocale,
-  ResetWeekday
+  PacerPlan,
+  ResetWeekday,
+  WorkPlanItem
 } from "../lib/pacerCalculator";
 import { withBasePath } from "../lib/siteMetadata";
 import "../styles/pacer.css";
@@ -113,11 +116,15 @@ const UI_COPY = {
     helpOpen: "계산 기준 보기",
     remaining: "주간 남은 용량",
     remainingRange: "주간 남은 용량 슬라이더",
+    plan: "Claude 플랜",
+    planHint: "공식 용량 배수로 작업 횟수를 보정합니다.",
+    planOptionLabel: (name: string, price: number, multiplier: number) =>
+      `${name}, 월 ${price}달러, ${multiplier}배 용량`,
     resetDay: "초기화 요일",
     resetTime: "초기화 시간",
     resetSelection: (day: string, time: string) =>
       `선택: ${day} ${time} 초기화`,
-    workHours: "주 사용시간",
+    workHours: "주요 사용시간",
     workHoursDefault: "기본 09:00-18:00",
     workStart: "주 사용 시작 시간",
     workEnd: "주 사용 종료 시간",
@@ -127,15 +134,18 @@ const UI_COPY = {
     untilReset: "초기화까지",
     workdaysLeft: "남은 작업일",
     recommendationTitle: "오늘 작업 추천",
-    recommendationSubtitle: "각 규모만 골라 진행할 때의 횟수",
+    recommendationSubtitle: (name: string) =>
+      `${name} · 같은 오늘 예산을 한 규모에만 썼을 때`,
     size: "규모",
-    basis: "기준",
+    basis: "용량 기준",
     recommendation: "추천",
-    basisValue: (capacity: number, minutes: number) =>
-      `약 ${capacity}% / ${minutes}분`,
+    basisValue: (capacity: number, interactionGuide: string) =>
+      `약 ${capacity}% · ${interactionGuide}`,
     countSuffix: "회",
+    mixLabel: "오늘 조합 예시",
+    sharedBudget: "세 행은 같은 예산을 공유하므로 서로 더하지 않습니다.",
     disclaimer:
-      "실제 소모량은 모델, 문맥 길이, 작업 난이도에 따라 달라지는 추정치입니다.",
+      "모델·문맥·도구 사용에 따라 실제 소모량이 달라지며, 서비스별 5시간·세션 한도가 이 결과보다 먼저 적용될 수 있습니다.",
     helpTitle: "계산 기준",
     helpClose: "계산 기준 닫기",
     helpSections: [
@@ -145,14 +155,24 @@ const UI_COPY = {
           "서비스 화면의 주간 잔여율을 넣습니다. 사용량만 보이면 100에서 사용량을 뺀 값을 사용합니다."
       },
       {
+        title: "플랜 보정",
+        body:
+          "Pro $20를 1x 기준으로 두고 Max 5x $100은 작업당 추정 소모율을 1/5로 낮춥니다. 가격이 아니라 공식 5배 용량 차이를 반영합니다."
+      },
+      {
         title: "초기화 기준",
         body:
-          "선택한 요일과 시간을 다음 초기화로 보고, 남은 주 사용시간에 용량을 나눕니다."
+          "오늘 권장 용량은 주간 잔여율을 초기화까지 남은 주요 사용일 환산값으로 나눕니다. 주요 사용시간은 하루 길이를 정하는 배분 기준이며, 현재 시각이 그 시간대 밖이어도 권장량을 0으로 막지 않습니다. 초기화 전 예정된 사용 구간이 없으면 남은 용량 전부를 이번 예산으로 봅니다."
       },
       {
         title: "작업 규모",
         body:
-          "소 2%·20분, 중 6%·60분, 대 15%·150분을 보수적인 기준으로 사용합니다."
+          "Pro 1x에서 소 2%는 1-2턴의 짧은 문맥, 중 6%는 3-5턴의 중간 문맥, 대 15%는 6턴 이상의 긴 문맥을 보수적인 기준으로 사용합니다. Max 5x에서는 각각 1/5로 보정하며 시간은 횟수를 제한하지 않습니다."
+      },
+      {
+        title: "별도 세션 한도",
+        body:
+          "서비스에 5시간 또는 단기 세션 한도가 있다면 그 한도가 이 주간 계획보다 먼저 적용될 수 있습니다. 서비스 화면의 세션 상태를 함께 확인하세요."
       }
     ],
     actualDalkomiTitle: "실제 달콤이",
@@ -168,6 +188,10 @@ const UI_COPY = {
     helpOpen: "View calculation guide",
     remaining: "Weekly capacity left",
     remainingRange: "Weekly capacity remaining slider",
+    plan: "Claude plan",
+    planHint: "Task counts are adjusted by the official capacity multiplier.",
+    planOptionLabel: (name: string, price: number, multiplier: number) =>
+      `${name}, ${price} dollars monthly, ${multiplier} times capacity`,
     resetDay: "Reset day",
     resetTime: "Reset time",
     resetSelection: (day: string, time: string) =>
@@ -182,15 +206,18 @@ const UI_COPY = {
     untilReset: "Until reset",
     workdaysLeft: "Workdays left",
     recommendationTitle: "Today’s task plan",
-    recommendationSubtitle: "Counts when using only one task size",
+    recommendationSubtitle: (name: string) =>
+      `${name} · using the same budget on one task size`,
     size: "Size",
-    basis: "Basis",
+    basis: "Capacity basis",
     recommendation: "Plan",
-    basisValue: (capacity: number, minutes: number) =>
-      `About ${capacity}% / ${minutes} min`,
+    basisValue: (capacity: number, interactionGuide: string) =>
+      `About ${capacity}% · ${interactionGuide}`,
     countSuffix: "x",
+    mixLabel: "Example mix",
+    sharedBudget: "All three rows share the same budget, so do not add them together.",
     disclaimer:
-      "These are planning estimates. Actual usage varies by model, context length and task difficulty.",
+      "Actual usage varies by model, context and tool use. A service-specific five-hour or session limit may apply before this plan.",
     helpTitle: "How it works",
     helpClose: "Close calculation guide",
     helpSections: [
@@ -200,14 +227,24 @@ const UI_COPY = {
           "Enter the weekly percentage remaining. If your service shows usage, subtract it from 100."
       },
       {
+        title: "Plan correction",
+        body:
+          "Pro $20 is the 1x baseline. Max 5x $100 divides each estimated task cost by five, reflecting the official capacity difference rather than price alone."
+      },
+      {
         title: "Reset schedule",
         body:
-          "The selected day and time are treated as the next reset, and capacity is spread across the work hours left."
+          "Today’s capacity divides weekly capacity left by the main-work-day equivalents remaining until reset. Main work hours define the allocation day length; being outside those hours does not force the recommendation to zero. If no scheduled window remains before reset, all remaining capacity becomes the current budget."
       },
       {
         title: "Task sizes",
         body:
-          "Conservative defaults are 2% and 20 min for small, 6% and 60 min for medium, and 15% and 150 min for large."
+          "On Pro 1x, conservative defaults are 2% for 1-2 short-context turns, 6% for 3-5 medium-context turns, and 15% for 6 or more long-context turns. Max 5x divides these costs by five. Time does not cap the counts."
+      },
+      {
+        title: "Separate session limits",
+        body:
+          "A service-specific five-hour or short session limit may apply before this weekly plan. Check the session status shown by your service."
       }
     ],
     actualDalkomiTitle: "Meet the real Dalkomi",
@@ -230,6 +267,25 @@ function formatPercent(value: number): string {
   }
 
   return `${value.toFixed(1)}%`;
+}
+
+function formatMixedWorkPlan(
+  items: WorkPlanItem[],
+  locale: PacerLocale
+): string {
+  if (items.length === 0) {
+    return locale === "ko"
+      ? "추천 가능한 작업 없음"
+      : "No task fits this budget";
+  }
+
+  return items
+    .map((item) =>
+      locale === "ko"
+        ? `${item.label} ${item.count}회`
+        : `${item.label} ${item.count}x`
+    )
+    .join(" + ");
 }
 
 function formatResetDistance(
@@ -297,6 +353,7 @@ export default function AiPacerApp({
     locale ?? "ko"
   );
   const [remainingPct, setRemainingPct] = useState(60);
+  const [plan, setPlan] = useState<PacerPlan>("pro");
   const [resetWeekday, setResetWeekday] =
     useState<ResetWeekday>(1);
   const [resetTime, setResetTime] = useState(DEFAULT_RESET_TIME);
@@ -326,6 +383,7 @@ export default function AiPacerApp({
         {
           remainingPct,
           resetWeekday,
+          plan,
           resetTime,
           workdayStart,
           workdayEnd,
@@ -336,6 +394,7 @@ export default function AiPacerApp({
     [
       activeLocale,
       now,
+      plan,
       remainingPct,
       resetTime,
       resetWeekday,
@@ -343,6 +402,9 @@ export default function AiPacerApp({
       workdayStart
     ]
   );
+  const selectedPlan =
+    PACER_PLANS.find((option) => option.value === plan) ??
+    PACER_PLANS[0];
   const selectedResetWeekday =
     RESET_WEEKDAYS.find((weekday) => weekday.value === resetWeekday) ??
     RESET_WEEKDAYS[1];
@@ -438,6 +500,31 @@ export default function AiPacerApp({
               } as React.CSSProperties}
             />
           </div>
+
+          <fieldset className="pacer-field pacer-plan">
+            <legend>{copy.plan}</legend>
+            <p>{copy.planHint}</p>
+            <div className="pacer-plan-options">
+              {PACER_PLANS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-label={copy.planOptionLabel(
+                    option.name,
+                    option.priceUsd,
+                    option.multiplier
+                  )}
+                  aria-pressed={plan === option.value}
+                  onClick={() => setPlan(option.value)}
+                >
+                  <strong>{option.name}</strong>
+                  <span>
+                    ${option.priceUsd} · {option.multiplier}x
+                  </span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
           <fieldset className="pacer-field pacer-weekdays">
             <legend>{copy.resetDay}</legend>
@@ -564,7 +651,9 @@ export default function AiPacerApp({
               <h2 id="recommendation-title">
                 {copy.recommendationTitle}
               </h2>
-              <p>{copy.recommendationSubtitle}</p>
+              <p>
+                {copy.recommendationSubtitle(selectedPlan.name)}
+              </p>
             </header>
             <div className="pacer-table-wrap">
               <table>
@@ -588,7 +677,7 @@ export default function AiPacerApp({
                         <span>
                           {copy.basisValue(
                             estimate.capacityCostPct,
-                            estimate.durationMinutes
+                            estimate.interactionGuide
                           )}
                         </span>
                       </td>
@@ -603,6 +692,18 @@ export default function AiPacerApp({
                 </tbody>
               </table>
             </div>
+            <div className="pacer-mix-plan">
+              <span>{copy.mixLabel}</span>
+              <strong>
+                {formatMixedWorkPlan(
+                  result.mixedWorkPlan,
+                  activeLocale
+                )}
+              </strong>
+            </div>
+            <p className="pacer-shared-budget">
+              {copy.sharedBudget}
+            </p>
             <p className="pacer-disclaimer">{copy.disclaimer}</p>
           </section>
         </div>

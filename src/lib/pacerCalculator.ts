@@ -3,6 +3,27 @@ export const DEFAULT_WORKDAY_END = "18:00";
 export const DEFAULT_RESET_TIME = "00:00";
 
 export type PacerLocale = "ko" | "en";
+export type PacerPlan = "pro" | "max5x";
+
+export const PACER_PLANS = [
+  {
+    value: "pro",
+    multiplier: 1,
+    name: "Pro",
+    priceUsd: 20
+  },
+  {
+    value: "max5x",
+    multiplier: 5,
+    name: "Max 5x",
+    priceUsd: 100
+  }
+] as const satisfies ReadonlyArray<{
+  value: PacerPlan;
+  multiplier: number;
+  name: string;
+  priceUsd: number;
+}>;
 
 export const RESET_WEEKDAYS = [
   {
@@ -55,6 +76,7 @@ export type PacerWarningCode = "reset-time" | "work-window";
 export type PacerCalculationInput = {
   remainingPct: number;
   resetWeekday: ResetWeekday;
+  plan?: PacerPlan;
   resetTime?: string;
   workdayStart?: string;
   workdayEnd?: string;
@@ -66,12 +88,20 @@ export type WorkEstimate = {
   label: string;
   example: string;
   capacityCostPct: number;
-  durationMinutes: number;
+  interactionGuide: string;
   recommendedCount: number;
+};
+
+export type WorkPlanItem = {
+  id: WorkSize;
+  label: string;
+  count: number;
 };
 
 export type PacerCalculationResult = {
   remainingPct: number;
+  plan: PacerPlan;
+  capacityMultiplier: number;
   resetAt: Date;
   resetLabel: string;
   hoursUntilReset: number;
@@ -83,6 +113,8 @@ export type PacerCalculationResult = {
   title: string;
   message: string;
   workEstimates: WorkEstimate[];
+  mixedWorkPlan: WorkPlanItem[];
+  isFinalWorkWindow: boolean;
   resetTime: string;
   workdayStart: string;
   workdayEnd: string;
@@ -91,9 +123,13 @@ export type PacerCalculationResult = {
 };
 
 type WorkPreset = Omit<WorkEstimate, "recommendedCount">;
-type LocalizedWorkPreset = Omit<WorkPreset, "label" | "example"> & {
+type LocalizedWorkPreset = Omit<
+  WorkPreset,
+  "label" | "example" | "interactionGuide"
+> & {
   label: Record<PacerLocale, string>;
   example: Record<PacerLocale, string>;
+  interactionGuide: Record<PacerLocale, string>;
 };
 
 const WORK_PRESETS: LocalizedWorkPreset[] = [
@@ -101,31 +137,40 @@ const WORK_PRESETS: LocalizedWorkPreset[] = [
     id: "small",
     label: { ko: "소", en: "S" },
     example: {
-      ko: "짧은 질문, 문구 정리",
-      en: "Quick questions and copy edits"
+      ko: "짧은 질문, 단일 함수·문구 수정",
+      en: "Quick questions, one function or copy edit"
     },
     capacityCostPct: 2,
-    durationMinutes: 20
+    interactionGuide: {
+      ko: "1-2턴 · 짧은 문맥",
+      en: "1-2 turns · short context"
+    }
   },
   {
     id: "medium",
     label: { ko: "중", en: "M" },
     example: {
-      ko: "파일 수정, 검토와 검증",
-      en: "File edits, review and checks"
+      ko: "단일 파일 수정, 검토·버그 추적",
+      en: "Single-file edits, review and debugging"
     },
     capacityCostPct: 6,
-    durationMinutes: 60
+    interactionGuide: {
+      ko: "3-5턴 · 중간 문맥",
+      en: "3-5 turns · medium context"
+    }
   },
   {
     id: "large",
     label: { ko: "대", en: "L" },
     example: {
-      ko: "여러 파일 분석과 구현",
-      en: "Multi-file analysis and build"
+      ko: "여러 파일 분석, 설계·구현",
+      en: "Multi-file analysis, design and build"
     },
     capacityCostPct: 15,
-    durationMinutes: 150
+    interactionGuide: {
+      ko: "6턴 이상 · 긴 문맥",
+      en: "6+ turns · long context"
+    }
   }
 ];
 
@@ -161,6 +206,20 @@ function clamp(value: number, minimum: number, maximum: number): number {
 
 function isResetWeekday(value: number): value is ResetWeekday {
   return Number.isInteger(value) && value >= 0 && value <= 6;
+}
+
+function resolvePacerPlan(plan: PacerPlan | undefined): {
+  value: PacerPlan;
+  multiplier: number;
+} {
+  const selectedPlan =
+    PACER_PLANS.find((option) => option.value === plan) ??
+    PACER_PLANS[0];
+
+  return {
+    value: selectedPlan.value,
+    multiplier: selectedPlan.multiplier
+  };
 }
 
 function parseTime(value: string | undefined): number | null {
@@ -318,11 +377,8 @@ function getRemainingWorkMinutesToday(
   return Math.max(0, (clippedEnd - clippedStart) / 1000 / 60);
 }
 
-function getPaceStatus(
-  dailyBudgetPct: number,
-  remainingWorkMinutesToday: number
-): PaceStatus {
-  if (remainingWorkMinutesToday <= 0 || dailyBudgetPct < 2) {
+function getPaceStatus(dailyBudgetPct: number): PaceStatus {
+  if (dailyBudgetPct < 2) {
     return "unavailable";
   }
 
@@ -343,32 +399,61 @@ function getPaceStatus(
 
 function buildWorkEstimates(
   dailyBudgetPct: number,
-  remainingWorkMinutesToday: number,
+  capacityMultiplier: number,
   locale: PacerLocale
 ): WorkEstimate[] {
   return WORK_PRESETS.map((preset) => {
+    const adjustedCapacityCostPct =
+      preset.capacityCostPct / capacityMultiplier;
     const capacityCount = Math.floor(
-      (dailyBudgetPct + Number.EPSILON) / preset.capacityCostPct
-    );
-    const timeCount = Math.floor(
-      remainingWorkMinutesToday / preset.durationMinutes
+      (dailyBudgetPct + Number.EPSILON) / adjustedCapacityCostPct
     );
 
     return {
       id: preset.id,
       label: preset.label[locale],
       example: preset.example[locale],
-      capacityCostPct: preset.capacityCostPct,
-      durationMinutes: preset.durationMinutes,
-      recommendedCount: Math.max(0, Math.min(capacityCount, timeCount))
+      capacityCostPct: adjustedCapacityCostPct,
+      interactionGuide: preset.interactionGuide[locale],
+      recommendedCount: Math.max(0, capacityCount)
     };
   });
+}
+
+function buildMixedWorkPlan(
+  dailyBudgetPct: number,
+  workEstimates: WorkEstimate[]
+): WorkPlanItem[] {
+  const items: WorkPlanItem[] = [];
+  let remainingBudgetPct = Math.max(0, dailyBudgetPct);
+
+  for (const estimate of [...workEstimates].reverse()) {
+    const count = Math.floor(
+      (remainingBudgetPct + Number.EPSILON) / estimate.capacityCostPct
+    );
+
+    if (count <= 0) {
+      continue;
+    }
+
+    items.push({
+      id: estimate.id,
+      label: estimate.label,
+      count
+    });
+    remainingBudgetPct = Math.max(
+      0,
+      remainingBudgetPct - count * estimate.capacityCostPct
+    );
+  }
+
+  return items;
 }
 
 function getCoachCopy(
   status: PaceStatus,
   workEstimates: WorkEstimate[],
-  remainingWorkMinutesToday: number,
+  isFinalWorkWindow: boolean,
   locale: PacerLocale
 ): Pick<PacerCalculationResult, "title" | "message"> {
   const largeCount =
@@ -377,16 +462,33 @@ function getCoachCopy(
   const mediumCount =
     workEstimates.find((estimate) => estimate.id === "medium")
       ?.recommendedCount ?? 0;
+  const smallCount =
+    workEstimates.find((estimate) => estimate.id === "small")
+      ?.recommendedCount ?? 0;
 
-  if (remainingWorkMinutesToday <= 0) {
+  if (isFinalWorkWindow) {
     return locale === "ko"
       ? {
-          title: "오늘 주 사용시간은 끝났어요",
-          message: "새 작업은 다음 주 사용시간에 시작하는 편이 좋습니다."
+          title: "초기화 전 마지막 구간이에요",
+          message:
+            largeCount > 0
+              ? `남은 용량은 이번 사용시간 안에 쓰세요. 용량상 대형 작업 ${largeCount}회까지 가능합니다.`
+              : mediumCount > 0
+                ? `남은 용량은 이번 사용시간 안에 쓰세요. 용량상 중형 작업 ${mediumCount}회까지 가능합니다.`
+                : smallCount > 0
+                  ? `남은 용량은 이번 사용시간 안에 쓰세요. 용량상 소형 작업 ${smallCount}회까지 가능합니다.`
+                  : "남은 용량이 아주 적으니 꼭 필요한 짧은 확인에만 사용하세요."
         }
       : {
-          title: "Today’s work window is over",
-          message: "Start new work in your next scheduled work window."
+          title: "This is your last window before reset",
+          message:
+            largeCount > 0
+              ? `Use the remaining capacity in this window. Capacity allows up to ${largeCount} large tasks.`
+              : mediumCount > 0
+                ? `Use the remaining capacity in this window. Capacity allows up to ${mediumCount} medium tasks.`
+                : smallCount > 0
+                  ? `Use the remaining capacity in this window. Capacity allows up to ${smallCount} small tasks.`
+                  : "Capacity is very low, so keep this to essential quick checks."
         };
   }
 
@@ -471,6 +573,7 @@ export function calculatePacer(
     0,
     100
   );
+  const plan = resolvePacerPlan(input.plan);
   const resetWeekday = isResetWeekday(input.resetWeekday)
     ? input.resetWeekday
     : 1;
@@ -502,28 +605,31 @@ export function calculatePacer(
     workWindow.startMinutes,
     workWindow.endMinutes
   );
+  const isFinalWorkWindow =
+    remainingPct > 0 &&
+    (scheduledMinutes <= 0 ||
+      (remainingWorkMinutesToday > 0 &&
+        Math.abs(scheduledMinutes - remainingWorkMinutesToday) < 0.01));
   const effectiveWorkdays = scheduledMinutes / workdayMinutes;
-  const todayFraction = remainingWorkMinutesToday / workdayMinutes;
-  const fullWorkdayBudgetPct =
-    effectiveWorkdays > 0 ? remainingPct / effectiveWorkdays : 0;
   const dailyBudgetPct = clamp(
-    fullWorkdayBudgetPct * todayFraction,
+    effectiveWorkdays > 0 ? remainingPct / effectiveWorkdays : remainingPct,
     0,
     remainingPct
   );
   const workEstimates = buildWorkEstimates(
     dailyBudgetPct,
-    remainingWorkMinutesToday,
+    plan.multiplier,
     locale
   );
-  const status = getPaceStatus(
+  const mixedWorkPlan = buildMixedWorkPlan(
     dailyBudgetPct,
-    remainingWorkMinutesToday
+    workEstimates
   );
+  const status = getPaceStatus(dailyBudgetPct);
   const coachCopy = getCoachCopy(
     status,
     workEstimates,
-    remainingWorkMinutesToday,
+    isFinalWorkWindow,
     locale
   );
   const weekday = RESET_WEEKDAYS.find(
@@ -544,6 +650,8 @@ export function calculatePacer(
 
   return {
     remainingPct,
+    plan: plan.value,
+    capacityMultiplier: plan.multiplier,
     resetAt,
     resetLabel:
       locale === "ko"
@@ -561,6 +669,8 @@ export function calculatePacer(
     title: coachCopy.title,
     message: coachCopy.message,
     workEstimates,
+    mixedWorkPlan,
+    isFinalWorkWindow,
     resetTime: resetTime.value,
     workdayStart: workWindow.start,
     workdayEnd: workWindow.end,

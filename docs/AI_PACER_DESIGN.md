@@ -7,7 +7,7 @@ AI Pacer는 주간 남은 AI 용량을 오늘 가능한 작업 횟수로 바꾸�
 ## 화면 원칙
 
 - 한 페이지에서 입력과 결과를 동시에 보여준다.
-- 주 입력은 주간 남은 용량과 초기화 일정 두 묶음이다.
+- 주 입력은 Claude 플랜, 주간 남은 용량, 초기화 일정 세 묶음이다.
 - 주 사용시간은 기본 09:00부터 18:00이며 필요할 때만 바꾼다.
 - 긴 설명은 `계산 기준` 다이얼로그에 둔다.
 - 기록, 알림, 도구 비교, 내보내기 화면은 만들지 않는다.
@@ -21,8 +21,10 @@ AI Pacer는 주간 남은 AI 용량을 오늘 가능한 작업 횟수로 바꾸�
 
 ```ts
 type PacerCalculationInput = {
+  plan?: "pro" | "max5x";
   remainingPct: number;
   resetWeekday: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  resetTime?: string;
   workdayStart?: string;
   workdayEnd?: string;
 };
@@ -32,18 +34,31 @@ type PacerCalculationInput = {
 
 ## 작업 기준
 
-| 규모 | 용량 | 시간 | 예시 |
-| --- | ---: | ---: | --- |
-| 소 | 2% | 20분 | 짧은 질문, 문구 정리 |
-| 중 | 6% | 60분 | 파일 수정, 검토와 검증 |
-| 대 | 15% | 150분 | 여러 파일 분석과 구현 |
+| 규모 | Pro 1x | Max 5x | 대화·문맥 | 예시 |
+| --- | ---: | ---: | --- | --- |
+| 소 | 2% | 0.4% | 1-2턴, 짧은 문맥 | 짧은 질문, 단일 함수·문구 수정 |
+| 중 | 6% | 1.2% | 3-5턴, 중간 문맥 | 단일 파일 수정, 검토·버그 추적 |
+| 대 | 15% | 3% | 6턴 이상, 긴 문맥 | 여러 파일 분석, 설계·구현 |
 
 ```ts
-recommendedCount = Math.min(
-  Math.floor(dailyBudgetPct / capacityCostPct),
-  Math.floor(remainingWorkMinutesToday / durationMinutes)
+workdayMinutes = workdayEndMinutes - workdayStartMinutes;
+effectiveWorkdays = scheduledMinutesUntilReset / workdayMinutes;
+dailyBudgetPct = Math.min(
+  remainingPct,
+  effectiveWorkdays > 0
+    ? remainingPct / effectiveWorkdays
+    : remainingPct
+);
+
+capacityMultiplier = plan === "max5x" ? 5 : 1;
+adjustedCapacityCostPct = baseCapacityCostPct / capacityMultiplier;
+
+recommendedCount = Math.floor(
+  dailyBudgetPct / adjustedCapacityCostPct
 );
 ```
+
+주요 사용시간은 초기화까지 남은 사용일 환산값을 구하는 기준이며, 현재 시각이 시간대 밖이어도 추천을 0으로 차단하지 않는다. 세 규모의 횟수는 같은 오늘 예산을 각 규모에만 사용했을 때의 값이며 서로 더하지 않는다. 초기화 전 예정된 사용 구간이 없으면 남은 용량 전부를 이번 예산으로 배정한다. Pro를 1배 기준으로 두고 Max 5x는 공식 안내된 세션 용량 배수에 맞춰 작업당 예상 소모율을 1/5로 보정한다. 플랜 가격에 비례해 임의 추정하지 않으며 모델, 문맥, 기능, 별도 세션·주간 한도에 따른 차이는 계산 범위 밖이다.
 
 ## 상태 기준
 
@@ -51,7 +66,7 @@ recommendedCount = Math.min(
 - `encourage`: 12% 이상, 엄지를 든 응원 표정
 - `maintain`: 7% 이상, 계획표를 보는 유지 표정
 - `caution`: 2% 이상, 안경을 낮춘 주의 표정
-- `unavailable`: 2% 미만 또는 오늘 사용시간 종료, 노트 위에서 쉬는 표정
+- `unavailable`: 오늘 권장 용량 2% 미만, 노트 위에서 쉬는 표정
 
 ## 배포 형태
 

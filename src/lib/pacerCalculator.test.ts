@@ -27,7 +27,7 @@ describe("calculatePacer", () => {
     expect(result.status).toBe("maintain");
   });
 
-  it("scales today's budget by the remaining part of the work window", () => {
+  it("keeps a full-session recommendation during a partial workday", () => {
     const now = new Date("2026-07-27T13:30:00");
     const result = calculatePacer(
       {
@@ -41,10 +41,15 @@ describe("calculatePacer", () => {
 
     expect(result.effectiveWorkdays).toBeCloseTo(3.5, 5);
     expect(result.remainingWorkMinutesToday).toBe(270);
-    expect(result.dailyBudgetPct).toBeCloseTo(10, 5);
+    expect(result.dailyBudgetPct).toBeCloseTo(20, 5);
+    expect(result.isFinalWorkWindow).toBe(false);
+    expect(result.mixedWorkPlan).toEqual([
+      { id: "large", label: "대", count: 1 },
+      { id: "small", label: "소", count: 2 }
+    ]);
   });
 
-  it("returns no new work recommendation after the work window", () => {
+  it("keeps a daily recommendation after the allocation window", () => {
     const now = new Date("2026-07-27T19:00:00");
     const result = calculatePacer(
       {
@@ -57,14 +62,58 @@ describe("calculatePacer", () => {
     );
 
     expect(result.remainingWorkMinutesToday).toBe(0);
-    expect(result.dailyBudgetPct).toBe(0);
-    expect(result.status).toBe("unavailable");
-    expect(result.workEstimates.every((estimate) => estimate.recommendedCount === 0)).toBe(
-      true
-    );
+    expect(result.effectiveWorkdays).toBeCloseTo(3, 5);
+    expect(result.dailyBudgetPct).toBeCloseTo(80 / 3, 5);
+    expect(result.status).toBe("push");
+    expect(
+      result.workEstimates.map((estimate) => estimate.recommendedCount)
+    ).toEqual([13, 4, 1]);
   });
 
-  it("limits each task count by both capacity and available time", () => {
+  it("does not shrink the daily budget by elapsed hours", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 60,
+        resetWeekday: 2,
+        resetTime: "06:00",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      new Date("2026-07-28T15:00:00")
+    );
+
+    expect(result.hoursUntilReset).toBeCloseTo(159, 5);
+    expect(result.effectiveWorkdays).toBeCloseTo(57 / 9, 5);
+    expect(result.dailyBudgetPct).toBeCloseTo(60 / (57 / 9), 5);
+    expect(
+      result.workEstimates.map((estimate) => estimate.recommendedCount)
+    ).toEqual([4, 1, 0]);
+  });
+
+  it("returns a useful budget outside the configured hours", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 39,
+        resetWeekday: 2,
+        resetTime: "00:00",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      new Date("2026-07-28T21:00:00")
+    );
+
+    expect(result.hoursUntilReset).toBeCloseTo(147, 5);
+    expect(result.remainingWorkMinutesToday).toBe(0);
+    expect(result.effectiveWorkdays).toBeCloseTo(6, 5);
+    expect(result.dailyBudgetPct).toBeCloseTo(6.5, 5);
+    expect(result.status).toBe("caution");
+    expect(
+      result.workEstimates.map((estimate) => estimate.recommendedCount)
+    ).toEqual([3, 1, 0]);
+    expect(result.title).toBe("짧게 끊어가세요");
+  });
+
+  it("calculates each task count from the shared capacity budget", () => {
     const now = new Date("2026-07-27T09:00:00");
     const result = calculatePacer(
       {
@@ -83,10 +132,69 @@ describe("calculatePacer", () => {
         estimate.recommendedCount
       ])
     ).toEqual([
-      ["small", 27],
-      ["medium", 9],
-      ["large", 3]
+      ["small", 50],
+      ["medium", 16],
+      ["large", 6]
     ]);
+    expect(result.mixedWorkPlan).toEqual([
+      { id: "large", label: "대", count: 6 },
+      { id: "medium", label: "중", count: 1 },
+      { id: "small", label: "소", count: 2 }
+    ]);
+  });
+
+  it("applies the Max 5x capacity multiplier to task costs", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 70,
+        resetWeekday: 5,
+        plan: "max5x",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      new Date("2026-07-27T13:30:00")
+    );
+
+    expect(result.dailyBudgetPct).toBeCloseTo(20, 5);
+    expect(result.plan).toBe("max5x");
+    expect(result.capacityMultiplier).toBe(5);
+    expect(
+      result.workEstimates.map((estimate) => [
+        estimate.capacityCostPct,
+        estimate.recommendedCount
+      ])
+    ).toEqual([
+      [0.4, 50],
+      [1.2, 16],
+      [3, 6]
+    ]);
+    expect(result.mixedWorkPlan).toEqual([
+      { id: "large", label: "대", count: 6 },
+      { id: "medium", label: "중", count: 1 },
+      { id: "small", label: "소", count: 2 }
+    ]);
+  });
+
+  it("keeps a capacity-fit large task when only 30 work minutes remain", () => {
+    const result = calculatePacer(
+      {
+        remainingPct: 15,
+        resetWeekday: 1,
+        resetTime: "18:00",
+        workdayStart: "09:00",
+        workdayEnd: "18:00"
+      },
+      new Date("2026-07-27T17:30:00")
+    );
+
+    expect(result.remainingWorkMinutesToday).toBe(30);
+    expect(result.dailyBudgetPct).toBeCloseTo(15, 5);
+    expect(result.isFinalWorkWindow).toBe(true);
+    expect(
+      result.workEstimates.find((estimate) => estimate.id === "large")
+        ?.recommendedCount
+    ).toBe(1);
+    expect(result.title).toBe("초기화 전 마지막 구간이에요");
   });
 
   it("falls back to 09:00-18:00 for an invalid work window", () => {
@@ -137,6 +245,8 @@ describe("calculatePacer", () => {
     expect(result.hoursUntilReset).toBeCloseTo(3.5, 5);
     expect(result.remainingWorkMinutesToday).toBe(210);
     expect(result.dailyBudgetPct).toBeCloseTo(70, 5);
+    expect(result.isFinalWorkWindow).toBe(true);
+    expect(result.title).toBe("초기화 전 마지막 구간이에요");
   });
 
   it("moves to next week when today’s reset time has passed", () => {
@@ -170,7 +280,10 @@ describe("calculatePacer", () => {
     expect(result.resetLabel).toBe("Monday at 00:00");
     expect(result.title).toBe("Your pace looks good");
     expect(result.workEstimates[0].example).toBe(
-      "Quick questions and copy edits"
+      "Quick questions, one function or copy edit"
+    );
+    expect(result.workEstimates[0].interactionGuide).toBe(
+      "1-2 turns · short context"
     );
   });
 

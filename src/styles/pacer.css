@@ -81,11 +81,13 @@
 }
 
 .pacer-icon-button:active,
+.pacer-plan-options button:active,
 .pacer-segmented button:active {
   transform: translateY(1px);
 }
 
 .pacer-icon-button:focus-visible,
+.pacer-plan-options button:focus-visible,
 .pacer-segmented button:focus-visible,
 .pacer-app input:focus-visible,
 .pacer-support a:focus-visible {
@@ -106,6 +108,7 @@
 }
 
 .pacer-field-heading label,
+.pacer-plan legend,
 .pacer-weekdays legend {
   color: var(--pacer-ink);
   font-size: 0.95rem;
@@ -199,6 +202,74 @@
   border-radius: 50%;
   background: var(--pacer-accent);
   box-shadow: 0 0 0 1px var(--pacer-accent);
+}
+
+.pacer-plan {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pacer-plan legend {
+  margin-bottom: 4px;
+}
+
+.pacer-plan > p {
+  margin: 0;
+  color: var(--pacer-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.pacer-plan-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pacer-plan-options button {
+  display: flex;
+  min-width: 0;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid var(--pacer-line);
+  border-radius: 8px;
+  background: var(--pacer-surface);
+  color: var(--pacer-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pacer-plan-options strong,
+.pacer-plan-options span {
+  display: block;
+}
+
+.pacer-plan-options strong {
+  font-size: 0.84rem;
+}
+
+.pacer-plan-options span {
+  flex: 0 0 auto;
+  color: var(--pacer-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pacer-plan-options button[aria-pressed="true"] {
+  border-color: var(--pacer-accent);
+  background: var(--pacer-accent);
+  color: #f7faff;
+}
+
+.pacer-plan-options button[aria-pressed="true"] span {
+  color: #dfeaff;
 }
 
 .pacer-weekdays {
@@ -461,6 +532,7 @@
 }
 
 .pacer-recommendations header p,
+.pacer-shared-budget,
 .pacer-disclaimer {
   margin: 0;
   color: var(--pacer-muted);
@@ -547,8 +619,38 @@
   font-size: 0.74rem;
 }
 
+.pacer-mix-plan {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 10px;
+  border-top: 1px solid var(--pacer-line);
+  border-bottom: 1px solid var(--pacer-line);
+}
+
+.pacer-mix-plan span {
+  color: var(--pacer-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.pacer-mix-plan strong {
+  color: var(--pacer-accent-strong);
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.pacer-shared-budget {
+  margin-top: 10px;
+  color: var(--pacer-ink);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .pacer-disclaimer {
-  margin-top: 12px;
+  margin-top: 5px;
   line-height: 1.5;
 }
 

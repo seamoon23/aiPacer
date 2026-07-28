@@ -57,9 +57,61 @@ describe("AiPacerApp", () => {
     );
 
     const rows = screen.getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("27회");
-    expect(rows[2]).toHaveTextContent("9회");
-    expect(rows[3]).toHaveTextContent("3회");
+    expect(rows[1]).toHaveTextContent("50회");
+    expect(rows[2]).toHaveTextContent("16회");
+    expect(rows[3]).toHaveTextContent("6회");
+    expect(
+      screen.getByText("대 6회 + 중 1회 + 소 2회")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "세 행은 같은 예산을 공유하므로 서로 더하지 않습니다."
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("keeps recommendations available after the default hours", () => {
+    vi.setSystemTime(new Date("2026-07-28T21:00:00"));
+    render(<AiPacerApp locale="ko" />);
+
+    fireEvent.change(screen.getByLabelText("주간 남은 용량"), {
+      target: { value: "39" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "화요일" }));
+
+    expect(screen.getByText("6.5%")).toBeInTheDocument();
+    const rows = screen.getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("3회");
+    expect(rows[2]).toHaveTextContent("1회");
+    expect(rows[3]).toHaveTextContent("0회");
+    expect(
+      screen.queryByText("오늘 주 사용시간은 끝났어요")
+    ).not.toBeInTheDocument();
+  });
+
+  it("applies the Max 5x plan correction", () => {
+    render(<AiPacerApp locale="ko" />);
+
+    const proButton = screen.getByRole("button", {
+      name: "Pro, 월 20달러, 1배 용량"
+    });
+    const maxButton = screen.getByRole("button", {
+      name: "Max 5x, 월 100달러, 5배 용량"
+    });
+
+    expect(proButton).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(maxButton);
+
+    expect(proButton).toHaveAttribute("aria-pressed", "false");
+    expect(maxButton).toHaveAttribute("aria-pressed", "true");
+    const rows = screen.getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("약 0.4%");
+    expect(rows[1]).toHaveTextContent("21회");
+    expect(rows[2]).toHaveTextContent("7회");
+    expect(rows[3]).toHaveTextContent("2회");
+    expect(
+      screen.getByText(/Max 5x · 같은 오늘 예산/)
+    ).toBeInTheDocument();
   });
 
   it("opens the calculation guide with external support links", () => {
@@ -78,6 +130,15 @@ describe("AiPacerApp", () => {
 
     expect(
       screen.getByRole("heading", { name: "계산 기준" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "플랜 보정" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "별도 세션 한도" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/시간은 횟수를 제한하지 않습니다/)
     ).toBeInTheDocument();
 
     const supportLink = screen.getByRole("link", {
@@ -152,9 +213,18 @@ describe("AiPacerApp", () => {
     expect(
       screen.getByRole("button", { name: "Monday" })
     ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", {
+        name: "Pro, 20 dollars monthly, 1 times capacity"
+      })
+    ).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Dalkomi says")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Today’s task plan" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Example mix")).toBeInTheDocument();
+    expect(
+      screen.getByText(/five-hour or session limit/)
     ).toBeInTheDocument();
   });
 });

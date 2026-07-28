@@ -72,7 +72,7 @@ describe("static deployment assets", () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.action.default_popup).toBe("popup.html");
-    expect(manifest.version).toBe("0.3.0");
+    expect(manifest.version).toBe("0.3.3");
     expect(manifest.default_locale).toBe("ko");
     expect(manifest.name).toBe("__MSG_appName__");
     expect(manifest.permissions).toBeUndefined();
